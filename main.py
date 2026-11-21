@@ -2,11 +2,14 @@
 Rehab Assistant web app — Flask backend.
 
 Login, SQL storage and patient <-> physiotherapist data exchange: see auth_db.py.
-Pages: /login, / (patient exercise screen), /doctor (physiotherapist dashboard).
+Pages: /login, / (patient mode selector + physical & cognitive screens), /doctor (physiotherapist dashboard).
 
 Supports:
-  - Arm curl (left, right, or auto-detected arm — 5 reps)
-  - Sequential finger opposition (Index -> Middle -> Ring -> Pinky -> Ring -> Middle — 10 touches)
+  - Physical Rehabilitation:
+      * Arm curl (left, right, or auto-detected arm — 5 reps)
+      * Sequential finger opposition (Index -> Middle -> Ring -> Pinky -> Ring -> Middle — 10 touches)
+  - Cognitive Rehabilitation (hands-free facial movement control):
+      * Logical Reasoning (Odd One Out — Categorisation, Analytical Thinking, Problem-Solving)
 """
 import json
 import os
@@ -14,7 +17,7 @@ import threading
 import time
 
 import cv2
-from flask import Flask, Response, jsonify, redirect, request
+from flask import Flask, Response, jsonify, redirect, request, send_from_directory
 
 from analyzer import RehabAnalyzer
 from auth_db import current_user, init_auth, login_required, patient_prescriptions, save_session_to_db
@@ -44,13 +47,11 @@ PRESCRIPTIONS = {
 }
 
 app = Flask(__name__)
-# Login, SQL storage, patient <-> physiotherapist data (auth_db.py).
-# The physiotherapist can override PRESCRIPTIONS per patient; RehabAnalyzer validates every change.
 init_auth(app, PRESCRIPTIONS, lambda rx: dict(RehabAnalyzer(rx).rx))
 
 
 # --------------------------------------------------
-# SHARED STATE
+# SHARED STATE (PHYSICAL MODEL — UNCHANGED)
 # --------------------------------------------------
 
 lock = threading.Lock()
@@ -59,7 +60,7 @@ camera_thread = None
 camera_stop = threading.Event()
 latest_frame = None
 analyzer = None
-session_owner = None     # id of the logged-in patient who started the running session
+session_owner = None
 
 tracking = {
     "camera_connected": False,
@@ -86,7 +87,7 @@ tracking = {
 
 
 # --------------------------------------------------
-# STEP 2: ANALYSE ONE FRAME
+# STEP 2: ANALYSE ONE FRAME (PHYSICAL MODEL — UNCHANGED)
 # --------------------------------------------------
 
 def process_tracking(data, t_ms, width, height):
@@ -160,7 +161,7 @@ def draw_overlay(img, r, reps, pose_detected, num_hands):
 
 
 # --------------------------------------------------
-# CAMERA AND MEDIAPIPE THREAD
+# CAMERA AND MEDIAPIPE THREAD (PHYSICAL MODEL — UNCHANGED)
 # --------------------------------------------------
 
 def open_capture():
@@ -268,13 +269,18 @@ def stop_camera():
 def home():
     if current_user()["role"] == "doctor":
         return redirect("/doctor")
-    # Patient screen: gem.html plus the account bar (name, messages, log out) from gem-auth.js.
     with open(os.path.join(FRONTEND_DIR, "gem.html"), encoding="utf-8") as f:
         page = f.read()
-    tag = '<script src="/gem-auth.js" defer></script>'
+    tags = '<script src="/cognitive.js" defer></script>\n<script src="/gem-auth.js" defer></script>'
     idx = page.lower().rfind("</body>")
-    page = page[:idx] + tag + page[idx:] if idx != -1 else page + tag
+    page = page[:idx] + tags + page[idx:] if idx != -1 else page + tags
     return Response(page, mimetype="text/html")
+
+
+@app.route("/cognitive.js")
+@login_required()
+def cognitive_js():
+    return send_from_directory(FRONTEND_DIR, "cognitive.js", mimetype="application/javascript")
 
 
 @app.route("/video_feed")
@@ -294,7 +300,7 @@ def video_feed():
 
 
 # --------------------------------------------------
-# API ROUTES
+# API ROUTES (PHYSICAL MODEL — UNCHANGED)
 # --------------------------------------------------
 
 @app.route("/api/camera/start", methods=["POST"])
@@ -317,7 +323,7 @@ def api_session_start():
     global analyzer, session_owner
     body = request.get_json(silent=True) or {}
     patient_id = current_user()["id"]
-    my_prescriptions = patient_prescriptions(patient_id)      # read the DB before taking the lock
+    my_prescriptions = patient_prescriptions(patient_id)
 
     with lock:
         if not tracking["camera_connected"]:
@@ -328,7 +334,7 @@ def api_session_start():
             return jsonify({"success": False, "error": f"Unknown exercise '{exercise}'."}), 400
 
         rx = {k: v for k, v in my_prescriptions[exercise].items() if k != "updated_at"}
-        side = body.get("side", rx.get("side", "auto"))       # the patient's choice wins, else the prescription
+        side = body.get("side", rx.get("side", "auto"))
         if side not in ("auto", "left", "right"):
             side = "auto"
 
@@ -362,9 +368,8 @@ def api_session_stop():
                        saved_at=time.strftime("%Y-%m-%dT%H:%M:%S"))
         tracking["reps"] = summary["reps"]
         owner = session_owner or current_user()["id"]
-        analyzer, session_owner = None, None                   # a session is saved only once
+        analyzer, session_owner = None, None
 
-    # Save to the database (the physiotherapist sees it on /doctor)
     session_id = save_session_to_db(owner, summary)
 
     os.makedirs(SESSION_DIR, exist_ok=True)
