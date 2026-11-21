@@ -53,3 +53,48 @@ The raw "Left Hand / Right Hand" text is no longer drawn on the video; the overl
 
 ## Voice feedback (frontend/gem.html)
 On by default (🔊 button on the exercise screen, or Settings → Audio feedback). Mistakes and safety messages (`in_danger`, `finger_metrics.in_error`, pain) are spoken at once, never cut off, and repeated every 4 s while they last; normal coaching waits until the current sentence has finished.
+
+## Dual-task mode (rehab_modes.py + frontend/rehab-modes.js)
+The patient holds a posture and answers simple questions at the same time.
+- **Postures:** `curl_hold` holds the elbow at the physio's curl target (±15°); `hand_open` keeps the hand open (≥ 80% of the open angle).
+- **Phases:**
+  1. `position`: get to the target and hold for 1 s.
+  2. `baseline`: hold alone for 10 s.
+  3. `dual`: hold while answering (6 questions × 8 s).
+  4. `done`.
+- **Questions:** sums, bigger number, odd/even, category, days of the week. Each has two options (left/right). The questions are self-written; MMSE/MoCA items are not used.
+- **Answering:**
+  - **Head:** tilt or turn the head towards the answer and hold it for 1.2 s, using the eyes and nose from the same pose camera. The neutral head position is calibrated at the start; the head must return to the centre before the next answer.
+  - **Click:** click or use ←/→, as an alternative.
+- **Results:**
+  - On-target % alone vs. with questions.
+  - **Dual-task cost** = (alone − with questions) ÷ alone × 100.
+  - Steadiness (SD) change, accuracy and average answer time.
+  - Saved like an exercise session, with `exercise: "dual_task"`; the physio page shows it.
+- **APIs:**
+  - `POST /api/dual/start {posture, questions, baseline_sec, question_sec, hold_ms}`: the camera must be connected; returns 409 while a normal exercise session runs.
+  - `GET /api/dual/state`
+  - `POST /api/dual/answer {choice: "left"|"right"}`
+  - `POST /api/dual/stop {reason}` → `summary`, `session_id`
+
+## Guided breathing & fatigue recovery
+- A 60 s breathing break: circle grows for 4 s in, shrinks for 6 s out, with spoken cues and a progress bar.
+- **When it starts:**
+  1. After **Pain — stop now**.
+  2. From the **☕ Breathing break** button.
+  3. **Automatically** when the movement quality drops (`FatigueMonitor`).
+- **Fatigue triggers (prototype thresholds):**
+  - **Arm curl:** the last 2 reps reach < 70% of the first reps' range; or they take > 1.7× as long; or there are 2 partial reps in a row.
+  - **Finger opposition:** 3 misses in the last 5 touches; or touches take > 2× as long.
+- **During the break:**
+  - The exercise session is paused (`/api/session/pause` / `resume`), so reps are not counted.
+  - The shoulder check uses the shoulder–ear distance. When the shoulders rise, it says "Your shoulders look raised — let them drop".
+- **After the break:**
+  - Continue or End session; after pain, "Message my physiotherapist".
+  - Breaks are saved in `summary.breaks`; the physio page shows "☕ N break(s)".
+- New `/api/tracking` fields: `paused`, `fatigue_alert {id, reason, message}`, `shoulder_ratio`, `dual_active`.
+
+These are training aids from a webcam estimate, **not clinical measurements**. All thresholds are prototype values for the physio to adjust.
+
+## Tests
+`python test_rehab_modes.py` (24 checks: head choice, dual-task flow and cost, fatigue triggers, shoulder check, API + database + doctor view), `python test_step2_exercises.py` (15), `python test_hand_side.py`.

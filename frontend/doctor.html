@@ -169,7 +169,8 @@
   };
 
   const EX_NAMES = { elbow_curl: 'Arm curl', finger_opposition: 'Finger opposition', finger_tap: 'Finger tapping',
-                     side_arm_raise: 'Side shoulder raise', seated_knee_extension: 'Knee extension' };
+                     side_arm_raise: 'Side shoulder raise', seated_knee_extension: 'Knee extension',
+                     dual_task: 'Dual-task (hold + questions)' };
   let patients = [];
   let selected = null;
 
@@ -234,11 +235,17 @@
     body.innerHTML = '';
     $('no-sessions').hidden = rows.length > 0;
     for (const s of rows) {
-      const result = [el('b', { textContent: `${s.reps}/${s.target_reps ?? '?'}` }), ' reps'];
-      if (s.partial_reps) result.push(el('div', { className: 'muted', textContent: `${s.partial_reps} ${s.exercise === 'finger_opposition' ? 'missed' : 'partial'}` }));
+      const result = [el('b', { textContent: `${s.reps}/${s.target_reps ?? '?'}` }), s.exercise === 'dual_task' ? ' correct' : ' reps'];
+      if (s.partial_reps && s.exercise !== 'dual_task') result.push(el('div', { className: 'muted', textContent: `${s.partial_reps} ${s.exercise === 'finger_opposition' ? 'missed' : 'partial'}` }));
 
       const movement = [];
-      if (s.exercise === 'finger_opposition') {
+      if (s.exercise === 'dual_task' && s.dual) {
+        const dd = s.dual;
+        if (dd.dual_in_zone_pct != null) movement.push(`on target ${dd.dual_in_zone_pct}% with questions` +
+          (dd.baseline_in_zone_pct != null ? ` (${dd.baseline_in_zone_pct}% alone)` : ''));
+        if (dd.cost_pct != null) movement.push(`dual-task cost ${dd.cost_pct}%`);
+        if (dd.accuracy_pct != null) movement.push(`answers ${dd.accuracy_pct}%` + (dd.mean_rt_sec != null ? `, ${dd.mean_rt_sec}s` : ''));
+      } else if (s.exercise === 'finger_opposition') {
         if (s.accuracy_pct != null) movement.push(`accuracy ${s.accuracy_pct}%`);
       } else if (s.lowest_angle != null) {
         movement.push(`${deg(s.lowest_angle)}–${deg(s.highest_angle)}`);
@@ -250,6 +257,8 @@
       else if (s.completed) status.push(el('span', { className: 'tag', textContent: 'Completed' }));
       else status.push(el('span', { className: 'tag grey', textContent: 'Stopped early' }));
       if (s.out_of_range > 0) status.push(el('span', { className: 'tag amber', textContent: `⚠ ${s.out_of_range}× past limit` }));
+      if (s.breaks > 0) status.push(el('span', { className: 'tag grey', title: 'Breathing break suggested because movement quality dropped',
+                                                 textContent: `☕ ${s.breaks} break${s.breaks > 1 ? 's' : ''}` }));
 
       const cell = el('td', {}, status);
       if (s.reviewed_at) {
