@@ -1,7 +1,9 @@
 """
-main_with_step2.py — Person 1's webcam pipeline (main.py) + Step 2 exercise logic.
+main_with_step2.py — Step 1 + Step 2 debug runner in an OpenCV window (no web server).
+The web app is main.py; use this to tune thresholds or measure accuracy on test videos.
 
     python main_with_step2.py                                   # webcam, side arm raise
+    python main_with_step2.py --exercise finger_tap
     python main_with_step2.py --exercise seated_knee_extension --side left
     python main_with_step2.py --video test.mp4 --expected 10    # test video, compare with true count
     python main_with_step2.py --video test.mp4 --dump frames.json   # save frames for run_frames.js / re-runs
@@ -25,9 +27,9 @@ def parse_args():
     ap = argparse.ArgumentParser()
     ap.add_argument("--exercise", default="side_arm_raise", choices=list(EXERCISES))
     ap.add_argument("--side", default="auto", choices=["auto", "left", "right"])
-    ap.add_argument("--min", dest="min_angle", type=float, help="min angle (default per exercise)")
+    ap.add_argument("--rest", dest="rest_angle", type=float, help="resting angle (default per exercise)")
     ap.add_argument("--target", dest="target_angle", type=float, help="target angle")
-    ap.add_argument("--safe", dest="safe_max", type=float, help="safe upper limit")
+    ap.add_argument("--safe", dest="safe_limit", type=float, help="safe limit")
     ap.add_argument("--reps", type=int, help="prescribed reps")
     ap.add_argument("--video", help="test video file instead of the webcam")
     ap.add_argument("--camera", type=int, default=0)
@@ -44,7 +46,7 @@ def draw_overlay(img, r):
     color = (60, 60, 255) if bad else (255, 255, 255)
     angle = "--" if r["angle"] is None else f"{r['angle']:.0f} deg"
     cv2.putText(img, angle, (20, 80), cv2.FONT_HERSHEY_SIMPLEX, 1.4, (255, 255, 255), 3)
-    cv2.putText(img, f"target {r['thresholds']['target']:.0f} | safe {r['thresholds']['safe_max']:.0f}",
+    cv2.putText(img, f"target {r['thresholds']['target']:.0f} | safe {r['thresholds']['safe_limit']:.0f}",
                 (20, 110), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (220, 220, 220), 1)
     cv2.putText(img, f"Reps {r['reps']}/{r['target_reps']}  partial {r['partial_reps']}  out-of-range {r['out_of_range']}",
                 (20, 140), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
@@ -62,7 +64,7 @@ def draw_overlay(img, r):
 def main():
     args = parse_args()
     rx = {"exercise": args.exercise, "side": args.side}
-    for k in ("min_angle", "target_angle", "safe_max", "reps"):
+    for k in ("rest_angle", "target_angle", "safe_limit", "reps"):
         if getattr(args, k) is not None:
             rx[k] = getattr(args, k)
 
@@ -95,7 +97,7 @@ def main():
             h, w = frame.shape[:2]
 
             tracking = detector.process_frame(frame, t)                 # Step 1
-            r = analyzer.update(tracking["pose"], t, w, h)              # Step 2
+            r = analyzer.update(tracking, t, w, h)                      # Step 2
             for e in r["events"]:
                 if e["type"] in ("rep", "partial_rep", "out_of_range", "hidden", "set_complete", "side_selected"):
                     print(f"[{t / 1000:6.2f}s] {e}")
