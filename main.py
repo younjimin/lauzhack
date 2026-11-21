@@ -5,8 +5,8 @@ Login, SQL storage and patient <-> physiotherapist data exchange: see auth_db.py
 Pages: /login, / (patient exercise screen), /doctor (physiotherapist dashboard).
 
 Supports:
-  - Arm curl (left, right, or auto-detected arm — 5 reps)
-  - Sequential finger opposition (Index -> Middle -> Ring -> Pinky -> Ring -> Middle — 10 touches)
+- Arm curl (left, right, or auto-detected arm — 5 reps)
+- Sequential finger opposition (Index -> Middle -> Ring -> Pinky -> Ring -> Middle — 10 touches)
 """
 import json
 import os
@@ -14,7 +14,7 @@ import threading
 import time
 
 import cv2
-from flask import Flask, Response, jsonify, redirect, request
+from flask import Flask, Response, jsonify, redirect, request, send_from_directory
 
 from analyzer import RehabAnalyzer
 from auth_db import current_user, init_auth, login_required, patient_prescriptions, save_session_to_db
@@ -37,10 +37,21 @@ VIDEO_SOURCE = os.environ.get("REHAB_VIDEO")
 MIRROR = VIDEO_SOURCE is None
 
 PRESCRIPTIONS = {
-    "curl": {"exercise": "elbow_curl", "side": "auto",
-             "rest_angle": 160, "target_angle": 100, "safe_limit": 85, "reps": 5},
-    "tap": {"exercise": "finger_opposition", "side": "auto",
-            "rest_angle": 90, "target_angle": 34, "reps": 10},
+    "curl": {
+        "exercise": "elbow_curl",
+        "side": "auto",
+        "rest_angle": 160,
+        "target_angle": 100,
+        "safe_limit": 85,
+        "reps": 5,
+    },
+    "tap": {
+        "exercise": "finger_opposition",
+        "side": "auto",
+        "rest_angle": 90,
+        "target_angle": 34,
+        "reps": 10,
+    },
 }
 
 app = Flask(__name__)
@@ -131,8 +142,15 @@ def process_tracking(data, t_ms, width, height):
 def draw_overlay(img, r, reps, pose_detected, num_hands):
     h, w = img.shape[:2]
     tracked = f" | Tracking: {r['side'].upper()}" if r is not None and r.get("side") else ""
-    cv2.putText(img, f"Detected: {'Yes' if pose_detected else 'No'} | Hands: {num_hands} | Reps: {reps}{tracked}", (20, 35),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+    cv2.putText(
+        img,
+        f"Detected: {'Yes' if pose_detected else 'No'} | Hands: {num_hands} | Reps: {reps}{tracked}",
+        (20, 35),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        0.7,
+        (0, 255, 0),
+        2,
+    )
 
     if r is not None:
         fm = r.get("finger_metrics")
@@ -148,15 +166,30 @@ def draw_overlay(img, r, reps, pose_detected, num_hands):
             )
         elif r["angle"] is not None:
             side_lbl = f" ({r['side'].upper()})" if r.get("side") else ""
-            cv2.putText(img, f"{r['angle']:.0f} deg{side_lbl}", (20, 75), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255, 255, 255), 2)
+            cv2.putText(
+                img,
+                f"{r['angle']:.0f} deg{side_lbl}",
+                (20, 75),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.9,
+                (255, 255, 255),
+                2,
+            )
 
         bw = min(300, w - 40)
         cv2.rectangle(img, (20, 95), (20 + bw, 109), (90, 90, 90), -1)
         cv2.rectangle(img, (20, 95), (20 + int(bw * r["progress"]), 109), (0, 200, 255), -1)
         bad = r["in_danger"] or r["message_key"] in ("stop", "hidden", "pain")
         cv2.rectangle(img, (0, h - 46), (w, h), (30, 30, 30), -1)
-        cv2.putText(img, r["message"], (16, h - 16), cv2.FONT_HERSHEY_SIMPLEX, 0.68,
-                    (60, 60, 255) if bad else (255, 255, 255), 2)
+        cv2.putText(
+            img,
+            r["message"],
+            (16, h - 16),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.68,
+            (60, 60, 255) if bad else (255, 255, 255),
+            2,
+        )
     return img
 
 
@@ -264,6 +297,22 @@ def stop_camera():
 # WEBSITE ROUTES
 # --------------------------------------------------
 
+@app.route("/login")
+def login_page():
+    return send_from_directory(FRONTEND_DIR, "login.html")
+
+
+@app.route("/gem-auth.js")
+def gem_auth_js():
+    return send_from_directory(FRONTEND_DIR, "gem-auth.js", mimetype="application/javascript")
+
+
+@app.route("/doctor")
+@login_required("doctor")
+def doctor_page():
+    return send_from_directory(FRONTEND_DIR, "doctor.html")
+
+
 @app.route("/")
 @login_required()
 def home():
@@ -336,10 +385,24 @@ def api_session_start():
         rx = {**rx, "side": side}
         analyzer = RehabAnalyzer(rx, mirrored=MIRROR)
         session_owner = patient_id
-        tracking.update(exercise=exercise, side=side, running=True, reps=0, partial_reps=0, out_of_range=0,
-                        in_danger=False, angle=None, min_angle=None, max_angle=None, progress=0.0,
-                        state="REST", target_reps=rx["reps"], message_key=None, status=None,
-                        finger_metrics=None)
+        tracking.update(
+            exercise=exercise,
+            side=side,
+            running=True,
+            reps=0,
+            partial_reps=0,
+            out_of_range=0,
+            in_danger=False,
+            angle=None,
+            min_angle=None,
+            max_angle=None,
+            progress=0.0,
+            state="REST",
+            target_reps=rx["reps"],
+            message_key=None,
+            status=None,
+            finger_metrics=None,
+        )
 
     return jsonify({"success": True, "reps": 0, "target_reps": rx["reps"], "prescription": rx})
 
@@ -359,8 +422,11 @@ def api_session_stop():
         if reason == "pain":
             analyzer.report_pain()
         summary = analyzer.finish()
-        summary.update(ui_exercise=tracking["exercise"], ended_by=reason,
-                       saved_at=time.strftime("%Y-%m-%dT%H:%M:%S"))
+        summary.update(
+            ui_exercise=tracking["exercise"],
+            ended_by=reason,
+            saved_at=time.strftime("%Y-%m-%dT%H:%M:%S"),
+        )
         tracking["reps"] = summary["reps"]
         owner = session_owner or current_user()["id"]
         analyzer, session_owner = None, None                   # a session is saved only once
@@ -373,8 +439,13 @@ def api_session_stop():
     with open(path, "w") as f:
         json.dump(summary, f, indent=2)
 
-    return jsonify({"success": True, "reps": summary["reps"], "min_angle": summary["lowest_angle"],
-                    "session_id": session_id, "summary": summary})
+    return jsonify({
+        "success": True,
+        "reps": summary["reps"],
+        "min_angle": summary["lowest_angle"],
+        "session_id": session_id,
+        "summary": summary,
+    })
 
 
 @app.route("/api/tracking")
@@ -387,5 +458,5 @@ def api_tracking():
 
 if __name__ == "__main__":
     print("GEM backend starting...")
-    print("Open http://127.0.0.1:5000 in your browser.")
+    print("Open http://127.0.0.1:5000/login in your browser.")
     app.run(host="127.0.0.1", port=5000, debug=False, threaded=True, use_reloader=False)

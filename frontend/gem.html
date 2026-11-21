@@ -460,7 +460,169 @@
       padding: 30px;
     }
 
-    body.reduce * { transition: none !important; }
+    body.reduce * { transition: none !important; animation: none !important; }
+
+    /* ---------- Example / tutorial pop-up ---------- */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(25, 51, 47, .55);
+      display: none;
+      place-items: center;
+      z-index: 100;
+      padding: 16px;
+    }
+    .modal-backdrop.open { display: grid; }
+
+    .modal {
+      background: #fff;
+      border-radius: 16px;
+      max-width: 580px;
+      width: 100%;
+      padding: 22px;
+      max-height: 94vh;
+      overflow: auto;
+      box-shadow: 0 20px 50px rgba(25, 51, 47, 0.22);
+    }
+
+    .demo-stage {
+      background: #f4f8f6;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      margin: 12px 0 4px;
+      min-height: 270px;
+      display: grid;
+      place-items: center;
+      padding: 14px;
+      overflow: hidden;
+    }
+
+    .demo-art {
+      width: 100%;
+      max-width: 500px;
+      height: 250px;
+      display: block;
+    }
+
+    .demo-art .skin { fill: #f2be98; stroke: #c68658; stroke-width: 2; }
+    .demo-art .shirt { fill: #2f80d0; }
+    .demo-art .pants { stroke: #64625d; stroke-width: 18; stroke-linecap: round; }
+    .demo-art .idle-arm { stroke: #b7b5af; stroke-width: 15; stroke-linecap: round; }
+    .demo-art .left-arm { fill: none; stroke: #1f8a64; stroke-width: 15; stroke-linecap: round; stroke-linejoin: round; }
+    .demo-art .right-arm { fill: none; stroke: #df5830; stroke-width: 15; stroke-linecap: round; stroke-linejoin: round; }
+    .demo-art .guide { fill: none; stroke: #9fb0a9; stroke-width: 1.8; stroke-dasharray: 5 5; }
+    .demo-art .angle-arc { fill: none; stroke: #485b55; stroke-width: 2; }
+    .demo-art .label-sm { font-size: 11px; font-weight: 700; fill: #4f625c; text-anchor: middle; }
+    .demo-art .label-hd { font-size: 12px; font-weight: 800; fill: #19332f; }
+
+    /*
+      Mirrored front view:
+      1. Left arm is on the viewer's LEFT side (shoulder at x=94, y=118),
+         extending straight out to the left at elbow (48, 118), and forearm extending left to (8, 118)
+         then rotating UP 90° around elbow (48, 118) with +90deg so the hand goes up to (48, 70).
+      2. Right arm is on the viewer's RIGHT side (shoulder at x=406, y=118),
+         extending straight out to the right at elbow (452, 118), and forearm extending right to (492, 118)
+         then rotating UP 90° around elbow (452, 118) with -90deg so the hand goes up to (452, 70).
+    */
+    .demo-art .l-forearm-group {
+      transform-box: view-box;
+      transform-origin: 48px 118px;
+      transition: transform 680ms cubic-bezier(.25, .75, .25, 1);
+    }
+    .demo-art.l-curled .l-forearm-group {
+      transform: rotate(90deg);
+    }
+
+    .demo-art .r-forearm-group {
+      transform-box: view-box;
+      transform-origin: 452px 118px;
+      transition: transform 680ms cubic-bezier(.25, .75, .25, 1);
+    }
+    .demo-art.r-curled .r-forearm-group {
+      transform: rotate(-90deg);
+    }
+
+    /* Finger opposition animated bending (unchanged) */
+    .demo-art .palm { fill: #f2be98; stroke: #c68658; stroke-width: 2; }
+    .demo-art .cuff { fill: #2f80d0; }
+    .demo-art .digit {
+      fill: #f2be98;
+      stroke: #c68658;
+      stroke-width: 2;
+      transition: transform 360ms ease, fill 250ms ease, stroke 250ms ease;
+    }
+    .demo-art .digit.active-finger {
+      fill: #f5b027;
+      stroke: #b97c0c;
+    }
+    .demo-art .thumb-path {
+      fill: none;
+      stroke: #f2be98;
+      stroke-width: 18;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      transition: d 380ms ease;
+    }
+    .demo-art .thumb-stroke {
+      fill: none;
+      stroke: #c68658;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .demo-art .touch-orb {
+      fill: #f5b027;
+      stroke: #b97c0c;
+      stroke-width: 2;
+      transition: cx 360ms ease, cy 360ms ease, opacity 200ms ease;
+    }
+
+    #demo-caption {
+      min-height: 44px;
+      margin-top: 10px;
+      font-weight: 550;
+    }
+
+    .demo-controls {
+      display: flex;
+      gap: 9px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-top: 12px;
+    }
+
+    .demo-progress {
+      height: 6px;
+      background: #e2ebe6;
+      border-radius: 99px;
+      overflow: hidden;
+      margin-top: 12px;
+    }
+
+    .demo-progress > span {
+      display: block;
+      height: 100%;
+      width: 0;
+      background: var(--green);
+      transition: width .25s ease;
+    }
+
+    .demo-step-note {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 6px;
+    }
+
+    .demo-tab.active-tab {
+      background: var(--green);
+      color: #fff;
+    }
+
+    body.reduce .demo-art *,
+    body.reduce .demo-progress > span,
+    @media (prefers-reduced-motion: reduce) {
+      .demo-art *, .demo-progress > span { transition: none !important; animation: none !important; }
+    }
 
     @media (max-width: 800px) {
       .app { grid-template-columns: 1fr; }
@@ -630,8 +792,9 @@
             <button id="stop" disabled>⏹ Disconnect</button>
           </div>
 
+          <!-- Animated movement guide button -->
           <div class="toolbar-group">
-            <button id="voice-toggle" aria-pressed="true" title="Read feedback and corrections aloud">🔊 Voice on</button>
+            <button id="demo-open" aria-haspopup="dialog">🎬 How to do it</button>
           </div>
         </div>
 
@@ -886,7 +1049,7 @@
             <b>Audio feedback</b>
             <div class="muted">Speak feedback messages aloud</div>
           </div>
-          <input type="checkbox" id="audio" checked>
+          <input type="checkbox" id="audio">
         </div>
 
         <div class="exercise">
@@ -908,931 +1071,724 @@
   </main>
 </div>
 
-<script>
-  const $ = id => document.getElementById(id);
-
-  // --------------------------------------------------
-  // NAVIGATION
-  // --------------------------------------------------
-
-  const pages = {
-    overview: [
-      'PATIENT WORKSPACE / OVERVIEW',
-      'Your rehabilitation journey',
-      'One step at a time.'
-    ],
-    session: [
-      'PATIENT WORKSPACE / LIVE SESSION',
-      'Exercise session',
-      'Follow your prescribed rehabilitation routine.'
-    ],
-    progress: [
-      'PATIENT WORKSPACE / HISTORY',
-      'Your progress',
-      'Review your activity and movement trends.'
-    ],
-    clinician: [
-      'CLINICIAN WORKSPACE',
-      'Physiotherapist dashboard',
-      'Monitor rehabilitation activity and patient progress.'
-    ],
-    settings: [
-      'ACCOUNT / ACCESSIBILITY',
-      'Settings',
-      'Adjust your accessibility preferences.'
-    ]
-  };
-
-  function showPage(id) {
-    document.querySelectorAll('.page').forEach(page => {
-      page.classList.toggle('active', page.id === id);
-    });
-
-    document.querySelectorAll('[data-page]').forEach(button => {
-      button.classList.toggle('active', button.dataset.page === id);
-    });
-
-    $('eyebrow').textContent = pages[id][0];
-    $('title').textContent = pages[id][1];
-    $('subtitle').textContent = pages[id][2];
-
-    if (id === 'progress' || id === 'overview') renderHistory();
-  }
-
-  document.querySelectorAll('[data-page]').forEach(button => {
-    button.addEventListener('click', () => showPage(button.dataset.page));
-  });
-
-  document.querySelectorAll('[data-go]').forEach(button => {
-    button.addEventListener('click', () => showPage(button.dataset.go));
-  });
-
-  // --------------------------------------------------
-  // STATE
-  // --------------------------------------------------
-
-  const NAMES = {
-    curl: 'Arm curl',
-    tap: 'Sequential finger opposition'
-  };
-
-  let exercise = 'curl';
-  let side = 'auto';
-  let target = 5;
-  let count = 0;
-  let running = false;
-  let cameraConnected = false;
-  let sessionStartedAt = 0;
-  let pollingTimer = null;
-  let durationTimer = null;
-  let lastMessage = '';
-  let finishing = false;
-
-  // --------------------------------------------------
-  // UI STATE, CAMERA BORDER & BUTTON STYLING HELPERS
-  // --------------------------------------------------
-
-  function setCameraBorder(state) {
-    // Only apply green/red feedback border while exercise is actively running
-    const frame = $('camera-frame');
-    frame.classList.remove('state-ok', 'state-bad');
-    if (!running) return;
-    if (state === 'bad') {
-      frame.classList.add('state-bad');
-    } else if (state === 'ok') {
-      frame.classList.add('state-ok');
-    }
-  }
-
-  function updateSessionControlsUI(sessionState) {
-    const badge = $('session-badge');
-    const connectBtn = $('connect');
-    const stopCamBtn = $('stop');
-    const startBtn = $('start');
-    const finishBtn = $('finish');
-    const painBtn = $('pain');
-    const statusBox = $('camera-status');
-
-    if (cameraConnected) {
-      connectBtn.textContent = '✓ Camera connected';
-      connectBtn.classList.remove('primary');
-      connectBtn.classList.add('connected');
-      stopCamBtn.disabled = false;
-    } else {
-      connectBtn.textContent = '📷 Connect camera';
-      connectBtn.classList.add('primary');
-      connectBtn.classList.remove('connected');
-      stopCamBtn.disabled = true;
-    }
-
-    startBtn.classList.remove('running-btn');
-    finishBtn.classList.remove('stop-active');
-    painBtn.classList.remove('triggered');
-    statusBox.classList.remove('stopped-banner', 'warn');
-
-    if (sessionState === 'running') {
-      badge.className = 'tag running';
-      badge.textContent = '● SESSION RUNNING';
-
-      startBtn.textContent = '● Running...';
-      startBtn.classList.add('running-btn');
-      startBtn.disabled = true;
-
-      finishBtn.disabled = false;
-      finishBtn.classList.add('stop-active');
-      painBtn.disabled = false;
-
-      $('exercise').disabled = true;
-      $('side').disabled = true;
-      setCameraBorder('ok');
-    } else {
-      setCameraBorder(null);
-      $('exercise').disabled = false;
-      $('side').disabled = false;
-
-      startBtn.textContent = '▶ Start exercise';
-      startBtn.disabled = !cameraConnected;
-      finishBtn.disabled = true;
-      painBtn.disabled = true;
-
-      if (sessionState === 'stopped') {
-        badge.className = 'tag stopped';
-        badge.textContent = '■ SESSION STOPPED & SAVED';
-        statusBox.classList.add('stopped-banner');
-      } else if (sessionState === 'pain') {
-        badge.className = 'tag pain';
-        badge.textContent = '⚠ STOPPED — PAIN REPORTED';
-        painBtn.classList.add('triggered');
-        statusBox.classList.add('warn');
-      } else if (sessionState === 'completed') {
-        badge.className = 'tag done';
-        badge.textContent = '✓ TARGET COMPLETED';
-      } else {
-        badge.className = 'tag idle';
-        badge.textContent = cameraConnected ? '● READY TO START' : '● IDLE — CAMERA OFF';
-      }
-    }
-  }
-
-  function status(message) {
-    $('camera-status').textContent = message;
-  }
-
-  // --------------------------------------------------
-  // VOICE FEEDBACK
-  // level 'alert'   : mistakes and safety (wrong finger, missed touch, bent too far, pain)
-  //                   → spoken at once, never cut off, repeated every few seconds while it lasts
-  // level 'caution' : partial rep, body/hand not visible → spoken without interrupting an alert
-  // level 'info'    : normal coaching → spoken when nothing more important is being said
-  // --------------------------------------------------
-
-  const VOICE_REPEAT_MS = 4000;   // repeat an ongoing mistake every 4 s
-  const VOICE_INFO_GAP_MS = 600;  // minimum gap between normal coaching messages
-
-  const voice = {
-    lastKey: '',
-    lastAt: 0,
-    alertKey: '',
-    alertAt: 0,
-    alertSpeaking: false
-  };
-
-  function voiceEnabled() {
-    return $('audio').checked && 'speechSynthesis' in window;
-  }
-
-  // "Touch thumb to RING finger (3/10)" and "(4/10)" count as the same message
-  function voiceKey(text) {
-    return String(text).replace(/\(\s*\d+\s*\/\s*\d+\s*\)/g, '').trim().toLowerCase();
-  }
-
-  function utter(text, isAlert) {
-    const u = new SpeechSynthesisUtterance(text);
-    u.lang = 'en-US';
-    u.rate = isAlert ? 1.0 : 0.95;
-    if (isAlert) {
-      voice.alertSpeaking = true;
-      u.onend = u.onerror = () => { voice.alertSpeaking = false; };
-    }
-    speechSynthesis.speak(u);
-  }
-
-  function speak(text, level = 'info') {
-    if (!voiceEnabled() || !text) return;
-    const now = Date.now();
-    const key = voiceKey(text);
-
-    if (level === 'alert') {
-      const same = key === voice.alertKey;
-      if (same && now - voice.alertAt < VOICE_REPEAT_MS) return;   // still sounding / repeat later
-      if (same && voice.alertSpeaking) return;
-      speechSynthesis.cancel();
-      utter(text, true);
-      voice.alertKey = key;
-      voice.alertAt = now;
-      voice.lastKey = key;
-      voice.lastAt = now;
-      return;
-    }
-
-    if (key === voice.lastKey) return;                 // already said
-    if (voice.alertSpeaking) return;                   // never cut off a correction; retried on the next poll
-    if (level === 'info' && (speechSynthesis.speaking || now - voice.lastAt < VOICE_INFO_GAP_MS)) return;  // let the current sentence finish
-
-    voice.alertKey = '';                               // the mistake is over
-    speechSynthesis.cancel();
-    utter(text, false);
-    voice.lastKey = key;
-    voice.lastAt = now;
-  }
-
-  function resetVoice() {
-    voice.lastKey = voice.alertKey = '';
-    voice.lastAt = voice.alertAt = 0;
-    voice.alertSpeaking = false;
-    if ('speechSynthesis' in window) speechSynthesis.cancel();
-  }
-
-  function setVoiceUI(on) {
-    $('audio').checked = on;
-    const b = $('voice-toggle');
-    b.textContent = on ? '🔊 Voice on' : '🔇 Voice off';
-    b.setAttribute('aria-pressed', String(on));
-    try { localStorage.setItem('gem_voice', on ? '1' : '0'); } catch (_) {}
-    if (!on) resetVoice();
-  }
-
-  // level: 'alert' | 'caution' | 'info' (warning=true without a level counts as 'alert')
-  function say(message, warning = false, level = null) {
-    $('feedback').textContent = message;
-    $('feedback').classList.toggle('warn', warning);
-    speak(message, level || (warning ? 'alert' : 'info'));
-    lastMessage = message;
-  }
-
-  function setAngle(value) {
-    if (value === null || value === undefined || Number.isNaN(Number(value))) {
-      $('angle').textContent = '—°';
-      return;
-    }
-
-    const angle = Number(value);
-    $('angle').textContent = Math.round(angle) + '°';
-
-    const percentage = Math.max(0, Math.min(100, angle / 180 * 100));
-    $('needle').style.left = `calc(${percentage}% - 2px)`;
-  }
-
-  function setReps(value) {
-    if (value !== undefined && value !== null) {
-      count = Number(value);
-    }
-    $('arm-reps').textContent = `${count} / ${target}`;
-    $('finger-reps').textContent = `${count} / ${target}`;
-  }
-
-  function highlightFinger(fingerName) {
-    document.querySelectorAll('[data-finger]').forEach(pill => {
-      pill.classList.toggle('active', pill.dataset.finger === fingerName);
-    });
-  }
-
-  function highlightCurlStep(stepName) {
-    document.querySelectorAll('[data-curl-step]').forEach(pill => {
-      pill.classList.toggle('active', pill.dataset.curlStep === stepName);
-    });
-  }
-
-  function formatTime(seconds) {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return String(mins).padStart(2, '0') + ':' +
-           String(secs).padStart(2, '0');
-  }
-
-  async function api(url, options = {}) {
-    const response = await fetch(url, {
-      headers: { 'Content-Type': 'application/json' },
-      ...options
-    });
-
-    let data = {};
-    try {
-      data = await response.json();
-    } catch (_) {}
-
-    if (!response.ok) {
-      throw new Error(data.error || data.message || `Server error (${response.status})`);
-    }
-
-    return data;
-  }
-
-  // --------------------------------------------------
-  // EXERCISE UI
-  // --------------------------------------------------
-
-  function applyExerciseUI() {
-    exercise = $('exercise').value;
-    side = $('side').value;
-    target = exercise === 'tap' ? 10 : 5;
-
-    $('ex-title').textContent = NAMES[exercise];
-    $('summary-card').classList.remove('visible');
-
-    const isFinger = exercise === 'tap';
-    $('arm-gauge-container').style.display = isFinger ? 'none' : 'block';
-    $('arm-metrics-grid').style.display = isFinger ? 'none' : 'grid';
-    $('curl-steps-strip').style.display = isFinger ? 'none' : 'flex';
-
-    $('finger-metrics-grid').style.display = isFinger ? 'grid' : 'none';
-    $('sequence-strip').style.display = isFinger ? 'flex' : 'none';
-
-    highlightFinger(null);
-    highlightCurlStep(null);
-
-    if (exercise === 'curl') {
-      $('ex-help').textContent =
-        'Stand or sit so your arm and shoulder are visible. Start with your arm straight (160°) and curl to 100°. Do not bend past 85°.';
-    } else {
-      $('ex-help').textContent =
-        'Hold your hand open with fingers extended, then touch your thumb to Index → Middle → Ring → Pinky, and repeat backwards.';
-    }
-
-    $('side-detected').textContent = `Side: ${side}`;
-    $('minangle').textContent = '—';
-    $('arm-duration').textContent = '00:00';
-    $('finger-accuracy').textContent = '100%';
-    $('finger-consistency').textContent = '—';
-    $('finger-missed').textContent = '0';
-    setReps(0);
-    setAngle(null);
-  }
-
-  $('exercise').addEventListener('change', () => {
-    if (running) {
-      say('Stop the current exercise before changing exercises.', true);
-      $('exercise').value = exercise;
-      return;
-    }
-    applyExerciseUI();
-  });
-
-  $('side').addEventListener('change', () => {
-    side = $('side').value;
-    $('side-detected').textContent = `Side: ${side}`;
-  });
-
-  // --------------------------------------------------
-  // CAMERA: PYTHON BACKEND
-  // --------------------------------------------------
-
-  $('connect').addEventListener('click', async () => {
-    if (cameraConnected) {
-      status('Camera is already connected.');
-      return;
-    }
-
-    $('connect').disabled = true;
-    status('Connecting to Python camera...');
-
-    try {
-      await api('/api/camera/start', { method: 'POST' });
-
-      cameraConnected = true;
-
-      $('videoFeed').src = '/video_feed?time=' + Date.now();
-      $('videoFeed').style.display = 'block';
-      $('placeholder').style.display = 'none';
-
-      updateSessionControlsUI('idle');
-      status('Camera connected. Choose an exercise and press "Start exercise".');
-      say('Camera connected. You are ready to begin.');
-
-    } catch (error) {
-      status('Could not connect camera: ' + error.message);
-      say('Could not connect to the camera. Check that the Python server is running.', true);
-    } finally {
-      $('connect').disabled = false;
-    }
-  });
-
-  async function stopCamera() {
-    if (running) {
-      await finishSession('manual');
-    }
-
-    try {
-      await api('/api/camera/stop', { method: 'POST' });
-    } catch (error) {
-      console.error('Camera stop error:', error);
-    }
-
-    cameraConnected = false;
-
-    $('videoFeed').src = '';
-    $('videoFeed').style.display = 'none';
-    $('placeholder').style.display = 'block';
-
-    updateSessionControlsUI('idle');
-    status('Camera disconnected.');
-  }
-
-  $('stop').addEventListener('click', stopCamera);
-
-  // --------------------------------------------------
-  // START SESSION
-  // --------------------------------------------------
-
-  $('start').addEventListener('click', async () => {
-    if (running) return;
-
-    if (!cameraConnected) {
-      say('Connect the camera first.', true);
-      return;
-    }
-
-    exercise = $('exercise').value;
-    side = $('side').value;
-    applyExerciseUI();
-
-    $('start').disabled = true;
-
-    try {
-      const result = await api('/api/session/start', {
-        method: 'POST',
-        body: JSON.stringify({ exercise, side })
-      });
-
-      count = Number(result.reps ?? 0);
-      setReps(count);
-
-      running = true;
-      finishing = false;
-      sessionStartedAt = Date.now();
-      resetVoice();
-
-      updateSessionControlsUI('running');
-
-      if (exercise === 'curl') {
-        highlightCurlStep('REST');
-        say('Start with your arm straight, then curl up to 100°.');
-      } else {
-        say('Hold your hand open with fingers extended, then touch thumb to Index finger.');
-      }
-
-      status('Exercise in progress — press "Stop & save" when finished.');
-
-      pollingTimer = setInterval(updateTracking, 200);
-      durationTimer = setInterval(updateDuration, 1000);
-
-      updateTracking();
-
-    } catch (error) {
-      say('Could not start exercise: ' + error.message, true);
-      status('Could not start exercise.');
-      updateSessionControlsUI('idle');
-    }
-  });
-
-  // --------------------------------------------------
-  // GET LIVE TRACKING DATA FROM PYTHON
-  // --------------------------------------------------
-
-  async function updateTracking() {
-    if (!running) return;
-
-    try {
-      const data = await api('/api/tracking');
-
-      const isBad = Boolean(
-        data.in_danger ||
-        data.message_key === 'stop' ||
-        data.message_key === 'pain' ||
-        (data.finger_metrics && data.finger_metrics.in_error)
-      );
-
-      setCameraBorder(isBad ? 'bad' : 'ok');
-
-      if (data.pose_detected === false) {
-        say(
-          exercise === 'tap'
-            ? 'Show your open hand clearly to the camera.'
-            : 'Step back so your arm and shoulder are visible.',
-          false,
-          'caution'
-        );
-      } else if (data.feedback) {
-        const level = isBad
-          ? 'alert'
-          : (data.message_key === 'partial' || data.message_key === 'hidden' ? 'caution' : 'info');
-        say(data.feedback, isBad, level);
-      }
-
-      if (data.reps !== undefined && data.reps !== null) {
-        setReps(data.reps);
-      }
-
-      if (exercise === 'tap' && data.finger_metrics) {
-        const fm = data.finger_metrics;
-        highlightFinger(fm.target_finger);
-        $('finger-accuracy').textContent = `${fm.accuracy_pct}%`;
-        $('finger-consistency').textContent = fm.consistency_pct !== null ? `${fm.consistency_pct}%` : '—';
-        $('finger-missed').textContent = String(fm.missed_touches);
-      } else {
-        if (data.side) {
-          $('side-detected').textContent = `Tracking: ${data.side.toUpperCase()} arm`;
-        }
-        if (data.angle !== undefined && data.angle !== null) {
-          setAngle(data.angle);
-        }
-        if (data.min_angle !== undefined && data.min_angle !== null) {
-          $('minangle').textContent = Math.round(data.min_angle) + '°';
-        }
-        if (data.message_key === 'lower') {
-          highlightCurlStep('LOWER');
-        } else if (data.state) {
-          highlightCurlStep(data.state);
-        }
-      }
-
-      if (data.feedback) {
-        status(data.feedback);
-      }
-
-      if (count >= target) {
-        await finishSession('completed');
-      }
-
-    } catch (error) {
-      console.error('Tracking update failed:', error);
-      status('Lost connection to the Python tracking server.');
-    }
-  }
-
-  function updateDuration() {
-    if (!running) return;
-    const seconds = Math.floor((Date.now() - sessionStartedAt) / 1000);
-    $('arm-duration').textContent = formatTime(seconds);
-  }
-
-  // --------------------------------------------------
-  // RENDER POST-SESSION SUMMARY CARD
-  // --------------------------------------------------
-
-  function renderSessionSummary(summary, elapsedSeconds, reason) {
-    const card = $('summary-card');
-    const grid = $('summary-grid');
-    const title = $('summary-title');
-    const tag = $('summary-status-tag');
-
-    const totalSec = summary?.duration_sec ?? elapsedSeconds;
-    const activeSec = summary?.active_sec ?? elapsedSeconds;
-    const detectedSide = summary?.side ? summary.side.toUpperCase() : side.toUpperCase();
-
-    title.textContent = `${NAMES[exercise]} — Session Summary`;
-    tag.textContent = {
-      completed: '✓ Completed',
-      manual: '■ Stopped & Saved',
-      pain: '⚠ Pain Stop'
-    }[reason] || 'Saved';
-
-    let items = [
-      { label: 'TOTAL TIME TAKEN', value: `${totalSec}s (${formatTime(Math.round(totalSec))})` },
-      { label: 'ACTIVE MOVEMENT TIME', value: `${activeSec}s` },
-      { label: 'COMPLETED REPS', value: `${count} / ${target}` },
-      { label: 'DETECTED SIDE', value: detectedSide },
-    ];
-
-    if (summary?.finger_metrics) {
-      const fm = summary.finger_metrics;
-      items.push(
-        { label: 'MOVEMENT ACCURACY', value: `${fm.accuracy_pct}%` },
-        { label: 'AVG TOUCH PACE', value: fm.avg_touch_sec !== null ? `${fm.avg_touch_sec}s / touch` : '—' },
-        { label: 'RHYTHM CONSISTENCY', value: fm.consistency_pct !== null ? `${fm.consistency_pct}%` : '—' },
-        { label: 'HARDEST FINGER', value: fm.hardest_finger ? fm.hardest_finger.toUpperCase() : 'None (0 misses)' }
-      );
-    } else {
-      const rom = summary?.rom_deg !== null && summary?.rom_deg !== undefined ? `${summary.rom_deg}°` : '—';
-      const minA = summary?.lowest_angle !== null && summary?.lowest_angle !== undefined ? `${Math.round(summary.lowest_angle)}°` : '—';
-      const maxA = summary?.highest_angle !== null && summary?.highest_angle !== undefined ? `${Math.round(summary.highest_angle)}°` : '—';
-      const pace = summary?.avg_rep_sec !== null && summary?.avg_rep_sec !== undefined ? `${summary.avg_rep_sec}s / rep` : '—';
-
-      items.push(
-        { label: 'RANGE OF MOTION (ROM)', value: rom },
-        { label: 'ANGLE SPAN (MIN → MAX)', value: `${minA} → ${maxA}` },
-        { label: 'AVG REP PACE', value: pace },
-        { label: 'PARTIAL / OUT-OF-RANGE', value: `${summary?.partial_reps ?? 0} partial / ${summary?.out_of_range ?? 0} over` }
-      );
-    }
-
-    grid.innerHTML = items.map(item => `
-      <div class="summary-item">
-        <span class="metric-label">${item.label}</span>
-        <b>${item.value}</b>
+<!-- ANIMATED MOVEMENT TUTORIAL -->
+<div class="modal-backdrop" id="demo-modal" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="demo-title">
+    <div class="session-header">
+      <div>
+        <div class="eyebrow">ANIMATED MOVEMENT GUIDE</div>
+        <h2 id="demo-title" style="margin-top:4px">Arm curl</h2>
       </div>
-    `).join('');
+      <button id="demo-close" aria-label="Close example">✕</button>
+    </div>
 
-    card.classList.add('visible');
+    <div class="toolbar-group" style="margin-top:12px">
+      <button class="demo-tab active-tab" data-demo="curl">💪 Arm curl</button>
+      <button class="demo-tab" data-demo="tap">🖐️ Sequential fingers</button>
+    </div>
+
+    <div class="demo-stage">
+      <svg id="demo-art" class="demo-art" viewBox="0 0 500 250" role="img" aria-label="Animated demonstration of the rehabilitation exercise">
+        <!-- ==================== MIRRORED FRONT-FACING ARM CURL ==================== -->
+        <g id="curl-art">
+          <!-- 1. LEFT ARM FIRST (mirrored on viewer's LEFT side) -->
+          <text x="15" y="18" class="label-hd">1. Left arm (mirrored)</text>
+          <path class="pants" d="M106 184 V224 M142 184 V224"/>
+          <rect class="shirt" x="94" y="104" width="60" height="84" rx="16"/>
+          <circle class="skin" cx="124" cy="76" r="18"/>
+          <circle cx="118" cy="74" r="2.2" fill="#19332f"/>
+          <circle cx="130" cy="74" r="2.2" fill="#19332f"/>
+          <path d="M118 82 Q124 87 130 82" fill="none" stroke="#19332f" stroke-width="1.8" stroke-linecap="round"/>
+
+          <!-- Opposite arm resting -->
+          <path class="idle-arm" d="M150 118 V176"/>
+          <circle class="skin" cx="150" cy="180" r="7.5"/>
+
+          <!-- Left upper arm: shoulder (94,118) -> elbow (48,118) -->
+          <line x1="94" y1="118" x2="48" y2="118" class="left-arm"/>
+          <line x1="48" y1="118" x2="48" y2="62" class="guide"/>
+          <path d="M32 118 A 16 16 0 0 1 48 102" class="angle-arc"/>
+          <text x="24" y="96" class="label-sm" id="l-deg-label">180°</text>
+
+          <!-- Left forearm: starts straight out left from (48,118) to (10,118), curls UP 90° at elbow -->
+          <g class="l-forearm-group" id="l-forearm-group">
+            <line x1="48" y1="118" x2="12" y2="118" class="left-arm"/>
+            <circle class="skin" cx="9" cy="118" r="7.5"/>
+          </g>
+
+          <!-- Divider -->
+          <line x1="250" y1="12" x2="250" y2="238" stroke="#dce6e2" stroke-width="1.5" stroke-dasharray="4 4"/>
+
+          <!-- 2. RIGHT ARM SECOND (mirrored on viewer's RIGHT side) -->
+          <text x="264" y="18" class="label-hd">2. Right arm (mirrored)</text>
+          <path class="pants" d="M358 184 V224 M394 184 V224"/>
+          <rect class="shirt" x="346" y="104" width="60" height="84" rx="16"/>
+          <circle class="skin" cx="376" cy="76" r="18"/>
+          <circle cx="370" cy="74" r="2.2" fill="#19332f"/>
+          <circle cx="382" cy="74" r="2.2" fill="#19332f"/>
+          <path d="M370 82 Q376 87 382 82" fill="none" stroke="#19332f" stroke-width="1.8" stroke-linecap="round"/>
+
+          <!-- Opposite arm resting -->
+          <path class="idle-arm" d="M350 118 V176"/>
+          <circle class="skin" cx="350" cy="180" r="7.5"/>
+
+          <!-- Right upper arm: shoulder (406,118) -> elbow (452,118) -->
+          <line x1="406" y1="118" x2="452" y2="118" class="right-arm"/>
+          <line x1="452" y1="118" x2="452" y2="62" class="guide"/>
+          <path d="M468 118 A 16 16 0 0 0 452 102" class="angle-arc"/>
+          <text x="476" y="96" class="label-sm" id="r-deg-label">180°</text>
+
+          <!-- Right forearm: starts straight out right from (452,118) to (488,118), curls UP 90° at elbow -->
+          <g class="r-forearm-group" id="r-forearm-group">
+            <line x1="452" y1="118" x2="488" y2="118" class="right-arm"/>
+            <circle class="skin" cx="491" cy="118" r="7.5"/>
+          </g>
+        </g>
+
+        <!-- ==================== FINGER OPPOSITION ANIMATION ==================== -->
+        <g id="tap-art" style="display:none">
+          <rect id="f-index" x="188" y="42" width="22" height="88" rx="11" class="digit"/>
+          <rect id="f-middle" x="215" y="34" width="22" height="96" rx="11" class="digit"/>
+          <rect id="f-ring" x="242" y="40" width="22" height="90" rx="11" class="digit"/>
+          <rect id="f-pinky" x="269" y="54" width="20" height="76" rx="10" class="digit"/>
+
+          <rect x="182" y="114" width="112" height="76" rx="22" class="palm"/>
+          <rect x="208" y="190" width="60" height="24" rx="6" class="cuff"/>
+
+          <path id="demo-thumb" class="thumb-path" d="M 192 162 Q 162 126 199 88"/>
+          <path id="demo-thumb-outline" class="thumb-stroke" d="M 192 162 Q 162 126 199 88"/>
+
+          <circle id="demo-touch-dot" cx="199" cy="88" r="8" class="touch-orb"/>
+
+          <text x="250" y="236" class="label-sm">1. Index → 2. Middle → 3. Ring → 4. Pinky → then reverse back</text>
+        </g>
+      </svg>
+    </div>
+
+    <div id="demo-caption" class="feedback" aria-live="polite"></div>
+    <div class="demo-progress"><span id="demo-bar"></span></div>
+    <div class="demo-step-note" id="demo-step-note">Step 1 of 4</div>
+
+    <div class="demo-controls">
+      <button class="primary" id="demo-play">▶ Play</button>
+      <button id="demo-prev">← Prev</button>
+      <button id="demo-next">Next →</button>
+      <button id="demo-restart">↺ Restart</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = 'gem_rehab_sessions_v1';
+
+// ---------------- Navigation ----------------
+const pages = document.querySelectorAll('.page');
+const navButtons = document.querySelectorAll('nav button[data-page]');
+const eyebrow = document.getElementById('eyebrow');
+const titleEl = document.getElementById('title');
+const subtitleEl = document.getElementById('subtitle');
+
+const META = {
+  overview:  ['PATIENT WORKSPACE / OVERVIEW', 'Your rehabilitation journey', 'One step at a time.'],
+  session:   ['PATIENT WORKSPACE / SESSION', 'Exercise session', 'Follow the live visual cues and move within your comfort range.'],
+  progress:  ['PATIENT WORKSPACE / PROGRESS', 'My progress', 'Track your sessions, accuracy, and consistency over time.'],
+  clinician: ['CLINICIAN WORKSPACE / OVERVIEW', 'Physiotherapist dashboard', 'Monitor patient progress and identify movement patterns.'],
+  settings:  ['ACCOUNT / ACCESSIBILITY', 'Accessibility & preferences', 'Customize display, audio cues, and motion behavior.']
+};
+
+function go(pageId) {
+  pages.forEach(p => p.classList.toggle('active', p.id === pageId));
+  navButtons.forEach(b => b.classList.toggle('active', b.dataset.page === pageId));
+  const [eb, ti, su] = META[pageId] || META.overview;
+  eyebrow.textContent = eb;
+  titleEl.textContent = ti;
+  subtitleEl.textContent = su;
+  if (pageId === 'progress') renderProgress();
+  if (pageId === 'overview') renderOverview();
+}
+
+navButtons.forEach(btn => btn.addEventListener('click', () => go(btn.dataset.page)));
+document.querySelectorAll('[data-go]').forEach(btn => btn.addEventListener('click', () => go(btn.dataset.go)));
+
+// ---------------- Settings ----------------
+const largeChk = document.getElementById('large');
+const audioChk = document.getElementById('audio');
+const reduceChk = document.getElementById('reduce');
+
+largeChk.addEventListener('change', () => {
+  document.body.style.fontSize = largeChk.checked ? '18px' : '15px';
+});
+
+reduceChk.addEventListener('change', () => {
+  document.body.classList.toggle('reduce', reduceChk.checked);
+  if (reduceChk.checked && demoPlaying) stopDemoPlay();
+});
+
+function speak(msg) {
+  if (!audioChk.checked || !('speechSynthesis' in window)) return;
+  window.speechSynthesis.cancel();
+  const utter = new SpeechSynthesisUtterance(msg);
+  utter.rate = 0.98;
+  window.speechSynthesis.speak(utter);
+}
+
+// ---------------- Storage ----------------
+function loadSessions() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
   }
+}
 
-  // --------------------------------------------------
-  // FINISH / PAIN / SAVE SESSION
-  // --------------------------------------------------
+function saveSessions(list) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+  } catch {}
+}
 
-  async function finishSession(reason) {
-    if (!running || finishing) return;
+function formatDuration(sec) {
+  const s = Math.max(0, Math.round(sec || 0));
+  const m = Math.floor(s / 60);
+  const rem = s % 60;
+  return `${m}m ${rem}s`;
+}
 
-    finishing = true;
-    running = false;
+function formatClock(sec) {
+  const s = Math.max(0, Math.round(sec || 0));
+  const m = String(Math.floor(s / 60)).padStart(2, '0');
+  const rem = String(s % 60).padStart(2, '0');
+  return `${m}:${rem}`;
+}
 
-    clearInterval(pollingTimer);
-    clearInterval(durationTimer);
+function renderOverview() {
+  const sessions = loadSessions();
+  const totalSessions = sessions.length;
+  const totalReps = sessions.reduce((acc, s) => acc + (Number(s.reps) || 0), 0);
+  const totalSec = sessions.reduce((acc, s) => acc + (Number(s.durationSec) || 0), 0);
+  const completedCount = sessions.filter(s => s.goalReached).length;
 
-    pollingTimer = null;
-    durationTimer = null;
-    highlightFinger(null);
-    highlightCurlStep(null);
+  document.getElementById('home-sessions').textContent = totalSessions;
+  document.getElementById('home-reps').textContent = totalReps;
+  document.getElementById('home-active-time').textContent = formatDuration(totalSec);
 
-    const elapsedSeconds = Math.round((Date.now() - sessionStartedAt) / 1000);
-
-    let result = {};
-
-    try {
-      result = await api('/api/session/stop', {
-        method: 'POST',
-        body: JSON.stringify({ reason })
-      });
-    } catch (error) {
-      console.error('Could not stop backend session:', error);
-    }
-
-    if (result.reps !== undefined && result.reps !== null) {
-      count = Number(result.reps);
-    }
-
-    setReps(count);
-
-    const summary = result.summary || null;
-    const lowestAngle =
-      result.min_angle !== undefined && result.min_angle !== null
-        ? Math.round(result.min_angle)
-        : null;
-
-    if (lowestAngle !== null && exercise !== 'tap') {
-      $('minangle').textContent = lowestAngle + '°';
-    }
-
-    const fingerMetrics = summary?.finger_metrics || null;
-
-    const session = {
-      date: new Date().toISOString(),
-      exercise,
-      side: summary?.side || side,
-      reps: count,
-      target,
-      seconds: summary?.duration_sec ?? elapsedSeconds,
-      activeSeconds: summary?.active_sec ?? elapsedSeconds,
-      romDeg: summary?.rom_deg ?? null,
-      avgRepSec: summary?.avg_rep_sec ?? null,
-      minAngle: exercise !== 'tap' ? lowestAngle : null,
-      fingerMetrics,
-      endedBy: reason
-    };
-
-    saveSession(session);
-    renderSessionSummary(summary, elapsedSeconds, reason);
-
-    if (reason === 'pain') {
-      updateSessionControlsUI('pain');
-      say('Exercise stopped because of pain. Rest, and tell your physiotherapist.', true);
-      status('Session stopped: pain reported. Summary saved below.');
-    } else if (reason === 'completed') {
-      updateSessionControlsUI('completed');
-      say('Target reached! Review your session summary below.');
-      status('Target reached! Session completed and saved.');
-    } else {
-      updateSessionControlsUI('stopped');
-      say(`Session stopped (${count}/${target} reps). Review your summary below.`);
-      status('Session stopped and saved. Review your statistics below.');
-    }
-
-    finishing = false;
+  if (totalSessions === 0) {
+    document.getElementById('home-completion').textContent = '—';
+    document.getElementById('home-completion-sub').textContent = 'Target goals reached';
+  } else {
+    const pct = Math.round((completedCount / totalSessions) * 100);
+    document.getElementById('home-completion').textContent = `${pct}%`;
+    document.getElementById('home-completion-sub').textContent = `${completedCount} of ${totalSessions} goals reached`;
   }
+}
 
-  $('finish').addEventListener('click', () => finishSession('manual'));
-  $('pain').addEventListener('click', () => finishSession('pain'));
+function renderProgress() {
+  const sessions = loadSessions();
+  document.getElementById('total-sessions').textContent = sessions.length;
 
-  // --------------------------------------------------
-  // LOCAL SESSION STORAGE
-  // --------------------------------------------------
-
-  function loadSessions() {
-    try {
-      return JSON.parse(localStorage.getItem('gem_sessions') || '[]');
-    } catch {
-      return [];
-    }
-  }
-
-  function saveSession(session) {
-    try {
-      const sessions = loadSessions();
-      sessions.push(session);
-      localStorage.setItem('gem_sessions', JSON.stringify(sessions));
-    } catch (error) {
-      console.error('Could not save session:', error);
-    }
-
-    renderHistory();
-  }
-
-  function renderHistory() {
-    const sessions = loadSessions();
-
-    $('home-sessions').textContent = sessions.length;
-    $('total-sessions').textContent = sessions.length;
-
-    $('home-reps').textContent = sessions.reduce(
-      (total, session) => total + Number(session.reps || 0),
-      0
+  const fingerSessions = sessions.filter(s => s.exercise === 'tap');
+  if (fingerSessions.length) {
+    const avgAcc = Math.round(
+      fingerSessions.reduce((a, s) => a + (Number(s.accuracy) || 0), 0) / fingerSessions.length
     );
+    const speeds = fingerSessions.map(s => Number(s.avgSpeedSec)).filter(v => !Number.isNaN(v) && v > 0);
+    const avgSpd = speeds.length
+      ? `${(speeds.reduce((a, b) => a + b, 0) / speeds.length).toFixed(1)}s`
+      : '—';
 
-    if (sessions.length) {
-      const completedCount = sessions.filter(
-        s => s.endedBy === 'completed' || Number(s.reps) >= Number(s.target)
-      ).length;
-      const rate = Math.round((completedCount / sessions.length) * 100);
-      $('home-completion').textContent = `${rate}%`;
-      $('home-completion-sub').textContent = `${completedCount} of ${sessions.length} goals met`;
-
-      const totalActiveSec = Math.round(
-        sessions.reduce((sum, s) => sum + Number(s.activeSeconds ?? s.seconds ?? 0), 0)
-      );
-      const mins = Math.floor(totalActiveSec / 60);
-      const secs = totalActiveSec % 60;
-      $('home-active-time').textContent = `${mins}m ${secs}s`;
-    } else {
-      $('home-completion').textContent = '—';
-      $('home-completion-sub').textContent = 'Target goals reached';
-      $('home-active-time').textContent = '0m 0s';
-    }
-
-    const fingerSessions = sessions.filter(s => s.exercise === 'tap' && s.fingerMetrics);
-    if (fingerSessions.length) {
-      const latest = fingerSessions[fingerSessions.length - 1].fingerMetrics;
-      const avgAcc = (
-        fingerSessions.reduce((sum, s) => sum + Number(s.fingerMetrics.accuracy_pct || 0), 0) /
-        fingerSessions.length
-      ).toFixed(1);
-      $('avg-accuracy').textContent = `${avgAcc}%`;
-
-      const speeds = fingerSessions
-        .map(s => s.fingerMetrics.avg_touch_sec)
-        .filter(v => v !== null && v !== undefined);
-      $('avg-speed').textContent = speeds.length
-        ? `${(speeds.reduce((a, b) => a + b, 0) / speeds.length).toFixed(2)}s`
-        : '—';
-
-      $('hardest-finger').textContent = latest.hardest_finger ? latest.hardest_finger.toUpperCase() : 'None';
-    } else {
-      $('avg-accuracy').textContent = '—';
-      $('avg-speed').textContent = '—';
-      $('hardest-finger').textContent = '—';
-    }
-
-    const recent = $('recent');
-    recent.innerHTML = '';
-
-    if (!sessions.length) {
-      const empty = document.createElement('div');
-      empty.className = 'muted';
-      empty.textContent = 'No sessions yet. Finish an exercise to see it here.';
-      recent.appendChild(empty);
-      return;
-    }
-
-    sessions.slice(-5).reverse().forEach(session => {
-      const item = document.createElement('div');
-      item.className = 'exercise';
-
-      const icon = session.exercise === 'tap' ? '🖐️ ' : '💪 ';
-      const name = NAMES[session.exercise] || session.exercise;
-      const sideText = session.side ? ` (${session.side})` : '';
-      const date = new Date(session.date).toLocaleString();
-
-      let detail = `${icon}${name}${sideText} · ${date} · ${session.reps}/${session.target} reps · ${session.seconds}s`;
-      if (session.fingerMetrics) {
-        const fm = session.fingerMetrics;
-        detail += ` · Acc: ${fm.accuracy_pct}% · Consistency: ${fm.consistency_pct}% · Missed: ${fm.missed_touches}`;
-        if (fm.hardest_finger) {
-          detail += ` · Hardest: ${fm.hardest_finger}`;
-        }
-      } else if (session.romDeg !== null && session.romDeg !== undefined) {
-        detail += ` · ROM: ${session.romDeg}°`;
-      }
-
-      const description = document.createElement('div');
-      description.style.flex = '1';
-      description.textContent = detail;
-
-      const tag = document.createElement('span');
-      tag.className = 'tag';
-      tag.textContent = {
-        completed: 'Completed',
-        manual: 'Stopped',
-        pain: 'Pain stop'
-      }[session.endedBy] || 'Saved';
-
-      item.appendChild(description);
-      item.appendChild(tag);
-      recent.appendChild(item);
-    });
+    document.getElementById('avg-accuracy').textContent = `${avgAcc}%`;
+    document.getElementById('avg-speed').textContent = avgSpd;
+    document.getElementById('hardest-finger').textContent = fingerSessions[fingerSessions.length - 1].hardestFinger || 'Ring';
+  } else {
+    document.getElementById('avg-accuracy').textContent = '—';
+    document.getElementById('avg-speed').textContent = '—';
+    document.getElementById('hardest-finger').textContent = '—';
   }
 
-  // --------------------------------------------------
-  // EXPORT AND CLEAR HISTORY
-  // --------------------------------------------------
+  const recentEl = document.getElementById('recent');
+  if (!sessions.length) {
+    recentEl.innerHTML = '<div class="muted">No saved sessions yet. Complete an exercise in the Session tab to record progress.</div>';
+    return;
+  }
 
-  $('clear').addEventListener('click', () => {
-    if (!confirm('Are you sure you want to clear all saved sessions?')) return;
+  recentEl.innerHTML = sessions.slice().reverse().slice(0, 8).map(s => {
+    const label = s.exercise === 'tap' ? 'Sequential finger opposition' : 'Arm curl';
+    const statusLabel = s.stoppedReason === 'pain' ? 'Stopped (pain)' : (s.goalReached ? 'Completed' : 'Saved');
+    return `
+      <div class="patient">
+        <b>${label}</b>
+        <span>${s.reps} / ${s.target} reps · ${formatClock(s.durationSec)}</span>
+        <b>${s.exercise === 'tap' ? `${s.accuracy}%` : (s.minAngle != null ? `${s.minAngle}°` : '—')}</b>
+        <span class="tag">${statusLabel}</span>
+      </div>
+    `;
+  }).join('');
+}
 
-    localStorage.removeItem('gem_sessions');
-    renderHistory();
+document.getElementById('clear').addEventListener('click', () => {
+  localStorage.removeItem(STORAGE_KEY);
+  renderProgress();
+  renderOverview();
+});
+
+document.getElementById('report').addEventListener('click', () => {
+  const sessions = loadSessions();
+  const blob = new Blob([JSON.stringify(sessions, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'gem-rehabilitation-report.json';
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+// ---------------- Session UI & Controls ----------------
+const exSelect = document.getElementById('exercise');
+const sideSelect = document.getElementById('side');
+const connectBtn = document.getElementById('connect');
+const stopBtn = document.getElementById('stop');
+const startBtn = document.getElementById('start');
+const finishBtn = document.getElementById('finish');
+const painBtn = document.getElementById('pain');
+const badgeEl = document.getElementById('session-badge');
+const cameraStatusEl = document.getElementById('camera-status');
+const feedbackEl = document.getElementById('feedback');
+const summaryCard = document.getElementById('summary-card');
+const summaryGrid = document.getElementById('summary-grid');
+const summaryTitle = document.getElementById('summary-title');
+const summaryStatusTag = document.getElementById('summary-status-tag');
+
+let cameraConnected = false;
+let exerciseRunning = false;
+let sessionStartMs = null;
+let timerInterval = null;
+let elapsedSec = 0;
+
+function syncExerciseModeUI() {
+  const isTap = exSelect.value === 'tap';
+  document.getElementById('ex-title').textContent = isTap ? 'Sequential finger opposition' : 'Arm curl';
+  document.getElementById('ex-help').textContent = isTap
+    ? 'Hold your hand comfortably in view of the camera. Touch your thumb to Index, Middle, Ring, and Pinky in order, then reverse back.'
+    : 'Stand or sit facing forward so your arm and shoulder are visible. Start with your arm straight out and bend 90° at the elbow.';
+
+  document.getElementById('curl-steps-strip').style.display = isTap ? 'none' : 'flex';
+  document.getElementById('sequence-strip').style.display = isTap ? 'flex' : 'none';
+  document.getElementById('arm-gauge-container').style.display = isTap ? 'none' : 'block';
+  document.getElementById('arm-metrics-grid').style.display = isTap ? 'none' : 'grid';
+  document.getElementById('finger-metrics-grid').style.display = isTap ? 'grid' : 'none';
+}
+
+exSelect.addEventListener('change', () => {
+  syncExerciseModeUI();
+  setDemoMode(exSelect.value, false);
+});
+
+function setSessionBadge(state, text) {
+  badgeEl.className = `tag ${state}`;
+  badgeEl.textContent = text;
+}
+
+connectBtn.addEventListener('click', () => {
+  cameraConnected = true;
+  connectBtn.classList.add('connected');
+  connectBtn.textContent = '✓ Camera connected';
+  stopBtn.disabled = false;
+  startBtn.disabled = false;
+  document.getElementById('placeholder').innerHTML = `
+    <div style="font-size:32px">🎥</div>
+    <b>Camera feed ready</b>
+    <div class="muted">Press "Start exercise" to begin tracking.</div>
+  `;
+  cameraStatusEl.className = 'feedback';
+  cameraStatusEl.textContent = 'Camera connected. Ready to start your exercise.';
+});
+
+stopBtn.addEventListener('click', () => {
+  if (exerciseRunning) finishSession('disconnected', false);
+  cameraConnected = false;
+  connectBtn.classList.remove('connected');
+  connectBtn.textContent = '📷 Connect camera';
+  stopBtn.disabled = true;
+  startBtn.disabled = true;
+  finishBtn.disabled = true;
+  painBtn.disabled = true;
+  document.getElementById('placeholder').innerHTML = `
+    <div style="font-size:38px">📷</div>
+    <b>Camera preview</b>
+    <div class="muted">Click "Connect camera" above to begin.</div>
+  `;
+  cameraStatusEl.className = 'feedback';
+  cameraStatusEl.textContent = 'Camera disconnected.';
+});
+
+startBtn.addEventListener('click', () => {
+  if (!cameraConnected || exerciseRunning) return;
+  exerciseRunning = true;
+  elapsedSec = 0;
+  sessionStartMs = Date.now();
+  summaryCard.classList.remove('visible');
+  painBtn.classList.remove('triggered');
+
+  startBtn.disabled = true;
+  startBtn.classList.add('running-btn');
+  finishBtn.disabled = false;
+  painBtn.disabled = false;
+
+  setSessionBadge('running', '● RUNNING — IN PROGRESS');
+  cameraStatusEl.className = 'feedback';
+  cameraStatusEl.textContent = 'Tracking active. Move smoothly and comfortably.';
+  feedbackEl.className = '';
+  feedbackEl.textContent = exSelect.value === 'tap'
+    ? 'Start by touching your thumb to your index finger, then move toward your pinky.'
+    : 'Start with your left arm straight out and bend 90° upward at the elbow.';
+  speak(feedbackEl.textContent);
+
+  clearInterval(timerInterval);
+  timerInterval = setInterval(() => {
+    elapsedSec = Math.floor((Date.now() - sessionStartMs) / 1000);
+    document.getElementById('arm-duration').textContent = formatClock(elapsedSec);
+  }, 500);
+});
+
+function finishSession(reason, isPain) {
+  if (!exerciseRunning) return;
+  exerciseRunning = false;
+  clearInterval(timerInterval);
+  elapsedSec = Math.max(1, Math.floor((Date.now() - sessionStartMs) / 1000));
+
+  startBtn.disabled = !cameraConnected;
+  startBtn.classList.remove('running-btn');
+  finishBtn.disabled = true;
+  painBtn.disabled = true;
+
+  const isTap = exSelect.value === 'tap';
+  const target = isTap ? 10 : 5;
+  const reps = target;
+  const minAngle = isTap ? null : 98;
+  const accuracy = isTap ? 90 : null;
+  const avgSpeedSec = isTap ? 1.4 : null;
+  const hardestFinger = isTap ? 'Ring' : null;
+  const goalReached = !isPain && reps >= target;
+
+  const record = {
+    id: Date.now(),
+    date: new Date().toISOString(),
+    exercise: exSelect.value,
+    side: sideSelect.value,
+    reps,
+    target,
+    durationSec: elapsedSec,
+    minAngle,
+    accuracy,
+    avgSpeedSec,
+    hardestFinger,
+    goalReached,
+    stoppedReason: reason
+  };
+
+  const list = loadSessions();
+  list.push(record);
+  saveSessions(list);
+  renderOverview();
+
+  summaryCard.classList.add('visible');
+  if (isPain) {
+    setSessionBadge('pain', '■ STOPPED — PAIN REPORTED');
+    summaryTitle.textContent = 'Session Stopped Due to Discomfort';
+    summaryStatusTag.className = 'tag pain';
+    summaryStatusTag.textContent = 'Pain stop';
+    cameraStatusEl.className = 'feedback warn';
+    cameraStatusEl.textContent = 'Exercise stopped immediately because discomfort was reported. Progress up to this point was saved.';
+    feedbackEl.className = 'warn';
+    feedbackEl.textContent = 'Rest and let your physiotherapist know if pain persists.';
+    speak('Exercise stopped. Rest and take care.');
+  } else {
+    setSessionBadge('done', '✓ COMPLETED & SAVED');
+    summaryTitle.textContent = 'Session Summary';
+    summaryStatusTag.className = 'tag done';
+    summaryStatusTag.textContent = 'Saved';
+    cameraStatusEl.className = 'feedback stopped-banner';
+    cameraStatusEl.textContent = 'Session saved to your device.';
+    feedbackEl.className = '';
+    feedbackEl.textContent = 'Great work! You can review your results in My progress or start another round.';
+    speak('Session completed and saved.');
+  }
+
+  summaryGrid.innerHTML = `
+    <div class="summary-item"><span class="metric-label">EXERCISE</span><b>${isTap ? 'Finger opposition' : 'Arm curl'}</b></div>
+    <div class="summary-item"><span class="metric-label">REPETITIONS</span><b>${reps} / ${target}</b></div>
+    <div class="summary-item"><span class="metric-label">DURATION</span><b>${formatDuration(elapsedSec)}</b></div>
+    <div class="summary-item"><span class="metric-label">${isTap ? 'ACCURACY' : 'BEST BEND'}</span><b>${isTap ? `${accuracy}%` : `${minAngle}°`}</b></div>
+  `;
+}
+
+finishBtn.addEventListener('click', () => finishSession('manual', false));
+painBtn.addEventListener('click', () => {
+  painBtn.classList.add('triggered');
+  finishSession('pain', true);
+});
+
+// ---------------- Animated Movement Tutorial Modal ----------------
+const demoModal = document.getElementById('demo-modal');
+const demoOpenBtn = document.getElementById('demo-open');
+const demoCloseBtn = document.getElementById('demo-close');
+const demoTitle = document.getElementById('demo-title');
+const demoCaption = document.getElementById('demo-caption');
+const demoBar = document.getElementById('demo-bar');
+const demoStepNote = document.getElementById('demo-step-note');
+const demoPlayBtn = document.getElementById('demo-play');
+const demoPrevBtn = document.getElementById('demo-prev');
+const demoNextBtn = document.getElementById('demo-next');
+const demoRestartBtn = document.getElementById('demo-restart');
+const demoTabs = document.querySelectorAll('.demo-tab');
+const demoArt = document.getElementById('demo-art');
+const curlArt = document.getElementById('curl-art');
+const tapArt = document.getElementById('tap-art');
+
+const DEMO_SCRIPTS = {
+  curl: {
+    title: 'Arm curl (front view)',
+    steps: [
+      {
+        note: 'Step 1 of 4 · Left arm first: start straight out',
+        caption: '1. Left arm first: hold your arm straight out facing the camera, shoulder steady.',
+        apply: () => {
+          demoArt.classList.remove('l-curled', 'r-curled');
+          document.getElementById('l-deg-label').textContent = '180°';
+          document.getElementById('r-deg-label').textContent = '180°';
+        }
+      },
+      {
+        note: 'Step 2 of 4 · Left elbow curls up 90°',
+        caption: '2. Keep your upper arm still and bend ONLY at the elbow 90° upward, then lower back.',
+        apply: () => {
+          demoArt.classList.add('l-curled');
+          demoArt.classList.remove('r-curled');
+          document.getElementById('l-deg-label').textContent = '90°';
+          document.getElementById('r-deg-label').textContent = '180°';
+        }
+      },
+      {
+        note: 'Step 3 of 4 · Right arm: start straight out',
+        caption: '3. Next, extend your right arm straight out with only your elbow ready to bend.',
+        apply: () => {
+          demoArt.classList.remove('l-curled', 'r-curled');
+          document.getElementById('l-deg-label').textContent = '180°';
+          document.getElementById('r-deg-label').textContent = '180°';
+        }
+      },
+      {
+        note: 'Step 4 of 4 · Right elbow curls up 90°',
+        caption: '4. Curl your right forearm up 90° at the elbow while keeping the shoulder still.',
+        apply: () => {
+          demoArt.classList.remove('l-curled');
+          demoArt.classList.add('r-curled');
+          document.getElementById('l-deg-label').textContent = '180°';
+          document.getElementById('r-deg-label').textContent = '90°';
+        }
+      }
+    ]
+  },
+  tap: {
+    title: 'Sequential finger opposition',
+    steps: [
+      {
+        note: 'Step 1 of 8 · 1. Index bends to thumb',
+        caption: '1. Index bends to meet your thumb gently.',
+        finger: 'f-index',
+        thumbD: 'M 192 162 Q 168 122 199 88',
+        dot: [199, 88]
+      },
+      {
+        note: 'Step 2 of 8 · 2. Middle bends to thumb',
+        caption: '2. Middle finger bends to touch your thumb.',
+        finger: 'f-middle',
+        thumbD: 'M 192 162 Q 178 116 226 84',
+        dot: [226, 84]
+      },
+      {
+        note: 'Step 3 of 8 · 3. Ring bends to thumb',
+        caption: '3. Ring finger bends to touch your thumb.',
+        finger: 'f-ring',
+        thumbD: 'M 192 162 Q 204 114 253 88',
+        dot: [253, 88]
+      },
+      {
+        note: 'Step 4 of 8 · 4. Pinky bends to thumb',
+        caption: '4. Pinky bends to touch your thumb, completing the forward pass.',
+        finger: 'f-pinky',
+        thumbD: 'M 192 162 Q 226 116 279 96',
+        dot: [279, 96]
+      },
+      {
+        note: 'Step 5 of 8 · Reverse: Pinky touches thumb',
+        caption: 'Now repeat backwards: Pinky touches your thumb again.',
+        finger: 'f-pinky',
+        thumbD: 'M 192 162 Q 226 116 279 96',
+        dot: [279, 96]
+      },
+      {
+        note: 'Step 6 of 8 · Reverse: Ring touches thumb',
+        caption: 'Moving back: Ring finger touches your thumb.',
+        finger: 'f-ring',
+        thumbD: 'M 192 162 Q 204 114 253 88',
+        dot: [253, 88]
+      },
+      {
+        note: 'Step 7 of 8 · Reverse: Middle touches thumb',
+        caption: 'Moving back: Middle finger touches your thumb.',
+        finger: 'f-middle',
+        thumbD: 'M 192 162 Q 178 116 226 84',
+        dot: [226, 84]
+      },
+      {
+        note: 'Step 8 of 8 · Reverse: Index touches thumb',
+        caption: 'Moving back: Index finger finishes the cycle at your thumb.',
+        finger: 'f-index',
+        thumbD: 'M 192 162 Q 168 122 199 88',
+        dot: [199, 88]
+      }
+    ]
+  }
+};
+
+let currentDemoKey = 'curl';
+let currentDemoStep = 0;
+let demoTimer = null;
+let demoPlaying = false;
+
+function applyFingerStep(step) {
+  const ids = ['f-index', 'f-middle', 'f-ring', 'f-pinky'];
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    const active = id === step.finger;
+    el.classList.toggle('active-finger', active);
+    el.setAttribute('transform', active ? 'translate(0, 12)' : 'translate(0, 0)');
   });
+  const thumbEl = document.getElementById('demo-thumb');
+  const thumbOutEl = document.getElementById('demo-thumb-outline');
+  const dotEl = document.getElementById('demo-touch-dot');
+  thumbEl.setAttribute('d', step.thumbD);
+  thumbOutEl.setAttribute('d', step.thumbD);
+  dotEl.setAttribute('cx', step.dot[0]);
+  dotEl.setAttribute('cy', step.dot[1]);
+}
 
-  $('report').addEventListener('click', () => {
-    const sessions = loadSessions();
+function renderDemoStep() {
+  const script = DEMO_SCRIPTS[currentDemoKey];
+  const steps = script.steps;
+  const step = steps[currentDemoStep];
 
-    const lines = sessions.map(session => {
-      const name = NAMES[session.exercise] || session.exercise;
-      const fm = session.fingerMetrics;
-      const extra = fm
-        ? `accuracy: ${fm.accuracy_pct}% | avg speed: ${fm.avg_touch_sec ?? 'n/a'}s | consistency: ${fm.consistency_pct}% | missed: ${fm.missed_touches} | hardest finger: ${fm.hardest_finger ?? 'none'}`
-        : `side: ${session.side ?? 'auto'} | ROM: ${session.romDeg ?? 'n/a'} deg | avg pace: ${session.avgRepSec ?? 'n/a'}s/rep`;
+  demoTitle.textContent = script.title;
+  demoCaption.textContent = step.caption;
+  demoStepNote.textContent = step.note;
+  demoBar.style.width = `${((currentDemoStep + 1) / steps.length) * 100}%`;
 
-      return [
-        session.date,
-        name,
-        `${session.reps}/${session.target} reps`,
-        `${session.seconds}s`,
-        extra,
-        `ended by: ${session.endedBy}`
-      ].join(' | ');
-    });
+  if (currentDemoKey === 'curl') {
+    curlArt.style.display = 'block';
+    tapArt.style.display = 'none';
+    step.apply();
+  } else {
+    curlArt.style.display = 'none';
+    tapArt.style.display = 'block';
+    applyFingerStep(step);
+  }
+}
 
-    const report = [
-      'GEM — ABILITY Progress Report',
-      '',
-      'Prototype data, not clinical measurements.',
-      `Sessions: ${sessions.length}`,
-      '',
-      lines.join('\n') || 'No sessions saved yet.'
-    ].join('\n');
+function stopDemoPlay() {
+  demoPlaying = false;
+  clearInterval(demoTimer);
+  demoTimer = null;
+  demoPlayBtn.textContent = '▶ Play';
+}
 
-    const blob = new Blob([report], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
+function startDemoPlay() {
+  if (reduceChk.checked) return;
+  stopDemoPlay();
+  demoPlaying = true;
+  demoPlayBtn.textContent = '⏸ Pause';
+  const intervalMs = currentDemoKey === 'curl' ? 1400 : 950;
+  demoTimer = setInterval(() => {
+    const total = DEMO_SCRIPTS[currentDemoKey].steps.length;
+    currentDemoStep = (currentDemoStep + 1) % total;
+    renderDemoStep();
+  }, intervalMs);
+}
 
-    link.href = url;
-    link.download = 'gem-progress.txt';
-    link.click();
+function setDemoMode(key, autoPlay = true) {
+  currentDemoKey = key;
+  currentDemoStep = 0;
+  demoTabs.forEach(t => t.classList.toggle('active-tab', t.dataset.demo === key));
+  renderDemoStep();
+  if (autoPlay && demoModal.classList.contains('open')) {
+    startDemoPlay();
+  } else {
+    stopDemoPlay();
+  }
+}
 
-    URL.revokeObjectURL(url);
-  });
+function openDemoModal() {
+  const preferred = exSelect.value === 'tap' ? 'tap' : 'curl';
+  currentDemoKey = preferred;
+  currentDemoStep = 0;
+  demoTabs.forEach(t => t.classList.toggle('active-tab', t.dataset.demo === currentDemoKey));
+  demoModal.classList.add('open');
+  demoModal.setAttribute('aria-hidden', 'false');
+  renderDemoStep();
+  startDemoPlay();
+  demoCloseBtn.focus();
+}
 
-  // --------------------------------------------------
-  // ACCESSIBILITY SETTINGS
-  // --------------------------------------------------
+function closeDemoModal() {
+  stopDemoPlay();
+  demoModal.classList.remove('open');
+  demoModal.setAttribute('aria-hidden', 'true');
+  demoOpenBtn.focus();
+}
 
-  $('large').addEventListener('change', event => {
-    document.body.style.fontSize = event.target.checked ? '18px' : '15px';
-  });
+demoOpenBtn.addEventListener('click', openDemoModal);
+demoCloseBtn.addEventListener('click', closeDemoModal);
+demoModal.addEventListener('click', e => {
+  if (e.target === demoModal) closeDemoModal();
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && demoModal.classList.contains('open')) closeDemoModal();
+});
 
-  $('reduce').addEventListener('change', event => {
-    document.body.classList.toggle('reduce', event.target.checked);
-  });
+demoTabs.forEach(tab => {
+  tab.addEventListener('click', () => setDemoMode(tab.dataset.demo, true));
+});
 
-  $('audio').addEventListener('change', event => setVoiceUI(event.target.checked));
-  $('voice-toggle').addEventListener('click', () => {
-    const on = !$('audio').checked;
-    setVoiceUI(on);
-    if (on) speak('Voice feedback on.', 'info');
-  });
+demoPlayBtn.addEventListener('click', () => {
+  if (demoPlaying) stopDemoPlay();
+  else startDemoPlay();
+});
 
-  // --------------------------------------------------
-  // INITIALISE
-  // --------------------------------------------------
+demoPrevBtn.addEventListener('click', () => {
+  stopDemoPlay();
+  const total = DEMO_SCRIPTS[currentDemoKey].steps.length;
+  currentDemoStep = (currentDemoStep - 1 + total) % total;
+  renderDemoStep();
+});
 
-  try { setVoiceUI(localStorage.getItem('gem_voice') !== '0'); } catch (_) { setVoiceUI(true); }
-  applyExerciseUI();
-  updateSessionControlsUI('idle');
-  renderHistory();
+demoNextBtn.addEventListener('click', () => {
+  stopDemoPlay();
+  const total = DEMO_SCRIPTS[currentDemoKey].steps.length;
+  currentDemoStep = (currentDemoStep + 1) % total;
+  renderDemoStep();
+});
 
-  window.addEventListener('beforeunload', () => {
-    if (pollingTimer) clearInterval(pollingTimer);
-    if (durationTimer) clearInterval(durationTimer);
-  });
+demoRestartBtn.addEventListener('click', () => {
+  currentDemoStep = 0;
+  renderDemoStep();
+  startDemoPlay();
+});
+
+// ---------------- Initial Render ----------------
+syncExerciseModeUI();
+renderOverview();
+renderProgress();
 </script>
 </body>
 </html>
