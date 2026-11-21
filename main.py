@@ -1,6 +1,9 @@
 """
 Rehab Assistant web app — Flask backend.
 
+Login, SQL storage and patient <-> physiotherapist data exchange: see auth_db.py.
+Pages: /login, / (patient exercise screen), /doctor (physiotherapist dashboard).
+
 Supports:
   - Arm curl (left, right, or auto-detected arm — 5 reps)
   - Sequential finger opposition (Index -> Middle -> Ring -> Pinky -> Ring -> Middle — 10 touches)
@@ -11,9 +14,10 @@ import threading
 import time
 
 import cv2
-from flask import Flask, Response, jsonify, request, send_from_directory
+from flask import Flask, Response, jsonify, redirect, request
 
 from analyzer import RehabAnalyzer
+from auth_db import current_user, init_auth, login_required, patient_prescriptions, save_session_to_db
 from pose_detector import PoseDetector
 
 
@@ -40,6 +44,9 @@ PRESCRIPTIONS = {
 }
 
 app = Flask(__name__)
+# Login, SQL storage, patient <-> physiotherapist data (auth_db.py).
+# The physiotherapist can override PRESCRIPTIONS per patient; RehabAnalyzer validates every change.
+init_auth(app, PRESCRIPTIONS, lambda rx: dict(RehabAnalyzer(rx).rx))
 
 
 # --------------------------------------------------
@@ -52,6 +59,7 @@ camera_thread = None
 camera_stop = threading.Event()
 latest_frame = None
 analyzer = None
+session_owner = None     # id of the logged-in patient who started the running session
 
 tracking = {
     "camera_connected": False,
@@ -256,11 +264,21 @@ def stop_camera():
 # --------------------------------------------------
 
 @app.route("/")
+@login_required()
 def home():
-    return send_from_directory(FRONTEND_DIR, "gem.html")
+    if current_user()["role"] == "doctor":
+        return redirect("/doctor")
+    # Patient screen: gem.html plus the account bar (name, messages, log out) from gem-auth.js.
+    with open(os.path.join(FRONTEND_DIR, "gem.html"), encoding="utf-8") as f:
+        page = f.read()
+    tag = '<script src="/gem-auth.js" defer></script>'
+    idx = page.lower().rfind("</body>")
+    page = page[:idx] + tag + page[idx:] if idx != -1 else page + tag
+    return Response(page, mimetype="text/html")
 
 
 @app.route("/video_feed")
+@login_required()
 def video_feed():
     def generate():
         while True:
@@ -280,21 +298,26 @@ def video_feed():
 # --------------------------------------------------
 
 @app.route("/api/camera/start", methods=["POST"])
+@login_required()
 def api_camera_start():
     start_camera()
     return jsonify({"success": True})
 
 
 @app.route("/api/camera/stop", methods=["POST"])
+@login_required()
 def api_camera_stop():
     stop_camera()
     return jsonify({"success": True})
 
 
 @app.route("/api/session/start", methods=["POST"])
+@login_required("patient")
 def api_session_start():
-    global analyzer
+    global analyzer, session_owner
     body = request.get_json(silent=True) or {}
+    patient_id = current_user()["id"]
+    my_prescriptions = patient_prescriptions(patient_id)      # read the DB before taking the lock
 
     with lock:
         if not tracking["camera_connected"]:
@@ -304,12 +327,14 @@ def api_session_start():
         if exercise not in PRESCRIPTIONS:
             return jsonify({"success": False, "error": f"Unknown exercise '{exercise}'."}), 400
 
-        side = body.get("side", "auto")
+        rx = {k: v for k, v in my_prescriptions[exercise].items() if k != "updated_at"}
+        side = body.get("side", rx.get("side", "auto"))       # the patient's choice wins, else the prescription
         if side not in ("auto", "left", "right"):
             side = "auto"
 
-        rx = {**PRESCRIPTIONS[exercise], "side": side}
+        rx = {**rx, "side": side}
         analyzer = RehabAnalyzer(rx, mirrored=MIRROR)
+        session_owner = patient_id
         tracking.update(exercise=exercise, side=side, running=True, reps=0, partial_reps=0, out_of_range=0,
                         in_danger=False, angle=None, min_angle=None, max_angle=None, progress=0.0,
                         state="REST", target_reps=rx["reps"], message_key=None, status=None,
@@ -319,7 +344,9 @@ def api_session_start():
 
 
 @app.route("/api/session/stop", methods=["POST"])
+@login_required("patient")
 def api_session_stop():
+    global analyzer, session_owner
     body = request.get_json(silent=True) or {}
     reason = body.get("reason", "manual")
 
@@ -334,6 +361,11 @@ def api_session_stop():
         summary.update(ui_exercise=tracking["exercise"], ended_by=reason,
                        saved_at=time.strftime("%Y-%m-%dT%H:%M:%S"))
         tracking["reps"] = summary["reps"]
+        owner = session_owner or current_user()["id"]
+        analyzer, session_owner = None, None                   # a session is saved only once
+
+    # Save to the database (the physiotherapist sees it on /doctor)
+    session_id = save_session_to_db(owner, summary)
 
     os.makedirs(SESSION_DIR, exist_ok=True)
     path = os.path.join(SESSION_DIR, f"session_{time.strftime('%Y%m%d_%H%M%S')}.json")
@@ -341,10 +373,11 @@ def api_session_stop():
         json.dump(summary, f, indent=2)
 
     return jsonify({"success": True, "reps": summary["reps"], "min_angle": summary["lowest_angle"],
-                    "summary": summary})
+                    "session_id": session_id, "summary": summary})
 
 
 @app.route("/api/tracking")
+@login_required()
 def api_tracking():
     with lock:
         result = dict(tracking)

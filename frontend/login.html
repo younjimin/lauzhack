@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GEM — Sign in</title>
+  <style>
+    :root { --bg:#f4f7f6; --ink:#19332f; --muted:#6b7b77; --line:#e1eae6; --green:#167b69; --soft:#e8f4ef; --red:#d9534f; --orange:#f4a261; }
+    * { box-sizing: border-box; }
+    body { margin:0; min-height:100vh; display:grid; place-items:center; background:var(--bg); color:var(--ink);
+           font:15px/1.5 Inter, system-ui, Arial, sans-serif; padding:20px; }
+    .wrap { width:100%; max-width:420px; }
+    .brand { font-weight:800; font-size:26px; letter-spacing:1px; text-align:center; margin-bottom:6px; }
+    .brand span { color:var(--green); }
+    .tagline { text-align:center; color:var(--muted); margin-bottom:22px; }
+    .card { background:#fff; border:1px solid var(--line); border-radius:16px; padding:24px; }
+    .tabs { display:flex; background:#edf3f0; border-radius:10px; padding:4px; margin-bottom:18px; }
+    .tabs button { flex:1; border:0; background:transparent; padding:9px; border-radius:8px; font:inherit; font-weight:700; color:var(--muted); cursor:pointer; }
+    .tabs button.active { background:#fff; color:var(--green); box-shadow:0 1px 3px rgba(0,0,0,.06); }
+    label { display:block; font-size:12px; font-weight:700; color:var(--muted); margin:12px 0 4px; }
+    input, select { width:100%; font:inherit; padding:11px 12px; border:1px solid var(--line); border-radius:9px; background:#fff; color:var(--ink); }
+    input:focus-visible, select:focus-visible, button:focus-visible { outline:3px solid var(--orange); outline-offset:2px; }
+    .roles { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+    .roles label { margin:0; display:flex; gap:8px; align-items:center; border:1px solid var(--line); border-radius:9px; padding:10px; cursor:pointer; color:var(--ink); font-size:14px; }
+    .roles input { width:auto; }
+    .roles label:has(input:checked) { border-color:var(--green); background:var(--soft); }
+    .submit { width:100%; margin-top:18px; border:0; border-radius:9px; padding:12px; background:var(--green); color:#fff; font:inherit; font-weight:700; cursor:pointer; }
+    .submit:disabled { opacity:.6; cursor:wait; }
+    .error { color:var(--red); font-size:13px; min-height:20px; margin-top:10px; }
+    .demo { margin-top:16px; background:var(--soft); border-radius:10px; padding:12px; font-size:13px; }
+    .demo button { border:0; background:#fff; border-radius:7px; padding:6px 10px; margin:6px 6px 0 0; font:inherit; font-size:13px; font-weight:650; color:var(--green); cursor:pointer; }
+    .note { text-align:center; color:var(--muted); font-size:12px; margin-top:16px; }
+    [hidden] { display:none !important; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="brand">✚ <span>GEM</span></div>
+    <div class="tagline">Home rehabilitation, guided by your physiotherapist</div>
+
+    <div class="card">
+      <div class="tabs" role="tablist">
+        <button class="active" id="tab-login" role="tab" aria-selected="true">Sign in</button>
+        <button id="tab-register" role="tab" aria-selected="false">Create account</button>
+      </div>
+
+      <form id="form" novalidate>
+        <div id="register-fields" hidden>
+          <label>I am a…</label>
+          <div class="roles">
+            <label><input type="radio" name="role" value="patient" checked> Patient</label>
+            <label><input type="radio" name="role" value="doctor"> Physiotherapist</label>
+          </div>
+          <label for="name">Full name</label>
+          <input id="name" autocomplete="name">
+        </div>
+
+        <label for="email">Email</label>
+        <input id="email" type="email" autocomplete="email" required>
+
+        <label for="password">Password</label>
+        <input id="password" type="password" autocomplete="current-password" required>
+
+        <button class="submit" id="submit" type="submit">Sign in</button>
+        <div class="error" id="error" role="alert"></div>
+      </form>
+
+      <div class="demo" id="demo" hidden>
+        <b>Demo accounts</b> (password <code>demo1234</code>)<br>
+        <button type="button" data-email="patient@demo.gem">Patient: Alex Morgan</button>
+        <button type="button" data-email="doctor@demo.gem">Physio: Dr. Lea Martin</button>
+      </div>
+    </div>
+
+    <div class="note">Prototype · video is processed on this computer and never uploaded</div>
+  </div>
+
+<script>
+  const $ = id => document.getElementById(id);
+  let mode = 'login';
+
+  function setMode(m) {
+    mode = m;
+    $('tab-login').classList.toggle('active', m === 'login');
+    $('tab-register').classList.toggle('active', m === 'register');
+    $('tab-login').setAttribute('aria-selected', m === 'login');
+    $('tab-register').setAttribute('aria-selected', m === 'register');
+    $('register-fields').hidden = m !== 'register';
+    $('submit').textContent = m === 'login' ? 'Sign in' : 'Create account';
+    $('password').autocomplete = m === 'login' ? 'current-password' : 'new-password';
+    $('error').textContent = '';
+  }
+  $('tab-login').onclick = () => setMode('login');
+  $('tab-register').onclick = () => setMode('register');
+
+  async function post(url, body) {
+    const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(data.error || `Server error (${r.status})`);
+    return data;
+  }
+
+  $('form').addEventListener('submit', async e => {
+    e.preventDefault();
+    $('error').textContent = '';
+    $('submit').disabled = true;
+    try {
+      const body = { email: $('email').value, password: $('password').value };
+      if (mode === 'register') {
+        body.name = $('name').value;
+        body.role = document.querySelector('input[name=role]:checked').value;
+      }
+      const res = await post(mode === 'login' ? '/api/auth/login' : '/api/auth/register', body);
+      window.location.href = res.user.role === 'doctor' ? '/doctor' : '/';
+    } catch (err) {
+      $('error').textContent = err.message;
+    } finally {
+      $('submit').disabled = false;
+    }
+  });
+
+  document.querySelectorAll('#demo button').forEach(b => b.addEventListener('click', () => {
+    setMode('login');
+    $('email').value = b.dataset.email;
+    $('password').value = 'demo1234';
+    $('form').requestSubmit();
+  }));
+
+  fetch('/api/auth/me').then(r => r.json()).then(d => { $('demo').hidden = !d.demo_accounts; }).catch(() => {});
+</script>
+</body>
+</html>
