@@ -13,9 +13,12 @@
       --muted: #71817d;
       --line: #e1eae6;
       --green: #167b69;
+      --green-dark: #115e50;
       --soft: #e8f4ef;
-      --orange: #f4a261;
+      --orange: #e67e22;
+      --orange-soft: #fdf2e9;
       --red: #d9534f;
+      --red-soft: #fbe3e1;
     }
 
     * { box-sizing: border-box; }
@@ -30,17 +33,44 @@
     button, select {
       font: inherit;
       cursor: pointer;
-      border: 0;
-      border-radius: 9px;
-      padding: 10px 14px;
+      border: 1px solid transparent;
+      border-radius: 10px;
+      padding: 10px 15px;
       background: #edf3f0;
       color: var(--ink);
       font-weight: 650;
+      transition: background-color .18s ease, color .18s ease, transform .08s ease, border-color .18s ease;
     }
 
+    button:active:not(:disabled) { transform: scale(0.98); }
+
     button.primary { background: var(--green); color: #fff; }
+    button.primary:hover:not(:disabled) { background: var(--green-dark); }
+
+    button.connected {
+      background: var(--soft);
+      color: var(--green);
+      border-color: var(--green);
+    }
+
+    button.running-btn {
+      background: #0f5132;
+      color: #fff;
+      box-shadow: 0 0 0 3px rgba(22, 123, 105, 0.25);
+    }
+
+    button.stop-active {
+      background: var(--orange);
+      color: #fff;
+    }
+
     button.danger { background: var(--red); color: #fff; }
-    button:disabled { opacity: .5; cursor: not-allowed; }
+    button.danger.triggered {
+      background: #8a2a26;
+      box-shadow: 0 0 0 3px rgba(217, 83, 79, 0.3);
+    }
+
+    button:disabled { opacity: .45; cursor: not-allowed; }
     button:hover:not(:disabled) { filter: brightness(.97); }
 
     button:focus-visible, select:focus-visible, input:focus-visible {
@@ -120,12 +150,21 @@
     .tag {
       background: var(--soft);
       color: var(--green);
-      padding: 6px 10px;
+      padding: 6px 12px;
       border-radius: 30px;
-      font-size: 11px;
-      font-weight: 700;
+      font-size: 12px;
+      font-weight: 750;
       white-space: nowrap;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
     }
+
+    .tag.idle { background: #edf3f0; color: var(--muted); }
+    .tag.running { background: #d1f2e6; color: #0f5132; }
+    .tag.stopped { background: var(--orange-soft); color: #9c5211; }
+    .tag.pain { background: var(--red-soft); color: #8a2a26; }
+    .tag.done { background: #d1f2e6; color: #0f5132; }
 
     .page { display: none; }
     .page.active { display: block; }
@@ -156,6 +195,14 @@
       border-radius: 14px;
       padding: 17px;
       min-width: 0;
+    }
+
+    .session-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      flex-wrap: wrap;
     }
 
     .metric-label {
@@ -201,14 +248,26 @@
     .camera {
       background: #172a2a;
       aspect-ratio: 16 / 9;
-      max-height: 70vh;
-      margin: 12px auto;
-      border-radius: 12px;
+      max-height: 62vh;
+      margin: 14px auto;
+      border-radius: 14px;
+      border: 5px solid transparent;
       overflow: hidden;
       display: grid;
       place-items: center;
       color: #d9e8e2;
       position: relative;
+      transition: border-color .2s ease, box-shadow .2s ease;
+    }
+
+    .camera.state-ok {
+      border-color: #167b69;
+      box-shadow: 0 0 0 4px rgba(22, 123, 105, 0.22);
+    }
+
+    .camera.state-bad {
+      border-color: #d9534f;
+      box-shadow: 0 0 0 4px rgba(217, 83, 79, 0.28);
     }
 
     .camera img {
@@ -227,9 +286,20 @@
 
     .controls {
       display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .toolbar-group {
+      display: flex;
       gap: 8px;
       flex-wrap: wrap;
       align-items: center;
+      background: #f8fbfa;
+      border: 1px solid var(--line);
+      padding: 8px 10px;
+      border-radius: 12px;
     }
 
     .feedback {
@@ -237,12 +307,53 @@
       border-radius: 10px;
       padding: 13px;
       margin-top: 12px;
-      font-size: 13px;
+      font-size: 14px;
+      font-weight: 500;
     }
 
     .feedback.warn {
-      background: #fbe3e1;
+      background: var(--red-soft);
       color: #8a2a26;
+    }
+
+    .feedback.stopped-banner {
+      background: var(--orange-soft);
+      color: #8a460b;
+      border: 1px solid #f5cba7;
+    }
+
+    .summary-card {
+      background: #f8fcfa;
+      border: 2px solid var(--green);
+      border-radius: 14px;
+      padding: 20px;
+      margin-top: 16px;
+      display: none;
+    }
+
+    .summary-card.visible {
+      display: block;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .summary-item {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 12px;
+    }
+
+    .summary-item b {
+      display: block;
+      font-size: 20px;
+      margin-top: 4px;
+      color: var(--ink);
     }
 
     .gauge {
@@ -272,6 +383,28 @@
       justify-content: space-between;
       font-size: 11px;
       color: var(--muted);
+    }
+
+    .sequence-strip {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin: 14px 0 4px;
+    }
+
+    .step-pill {
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: #edf3f0;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .step-pill.active {
+      background: var(--green);
+      color: #fff;
     }
 
     .chart {
@@ -346,14 +479,8 @@
         padding: 9px;
       }
       main { padding: 17px; }
-      .grid { grid-template-columns: repeat(2, 1fr); }
+      .grid, .summary-grid { grid-template-columns: repeat(2, 1fr); }
       .two { grid-template-columns: 1fr; }
-    }
-
-    @media (max-width: 430px) {
-      .patient { grid-template-columns: 1.4fr .8fr .6fr; }
-      .patient > :last-child { display: none; }
-      h1 { font-size: 22px; }
     }
   </style>
 </head>
@@ -412,17 +539,17 @@
         <div class="card">
           <div class="metric-label">TOTAL REPETITIONS</div>
           <div class="metric" id="home-reps">0</div>
-          <small class="muted">Across all sessions</small>
+          <small class="muted">Arm curls &amp; finger touches</small>
         </div>
         <div class="card">
-          <div class="metric-label">MOVEMENT SCORE</div>
-          <div class="metric">85%</div>
-          <small class="muted">Demo score</small>
+          <div class="metric-label">COMPLETION RATE</div>
+          <div class="metric" id="home-completion">—</div>
+          <small class="muted" id="home-completion-sub">Target goals reached</small>
         </div>
         <div class="card">
-          <div class="metric-label">ACTIVE STREAK</div>
-          <div class="metric">3 days</div>
-          <small class="muted">Illustrative data</small>
+          <div class="metric-label">ACTIVE THERAPY TIME</div>
+          <div class="metric" id="home-active-time">0m 0s</div>
+          <small class="muted">Total tracked practice</small>
         </div>
       </div>
 
@@ -432,18 +559,18 @@
           <div class="exercise">
             <div class="emoji">💪</div>
             <div style="flex:1">
-              <b>Right arm curl</b>
-              <div class="muted">10 repetitions · elbow 180° → 90°</div>
+              <b>Arm curl (Left or Right)</b>
+              <div class="muted">5 repetitions · elbow 160° → 100°</div>
             </div>
-            <span class="tag">Pending</span>
+            <span class="tag">Available</span>
           </div>
           <div class="exercise">
             <div class="emoji">🖐️</div>
             <div style="flex:1">
-              <b>Finger tapping</b>
-              <div class="muted">20 taps · thumb to index finger</div>
+              <b>Sequential finger opposition</b>
+              <div class="muted">10 touches · Index → Middle → Ring → Pinky &amp; back</div>
             </div>
-            <span class="tag">Pending</span>
+            <span class="tag">Available</span>
           </div>
           <button class="primary" data-go="session">Begin session</button>
         </div>
@@ -472,87 +599,159 @@
     <!-- EXERCISE SESSION -->
     <section class="page" id="session">
       <div class="card">
-        <div class="eyebrow">LIVE REHABILITATION</div>
-        <h2 style="margin-top:5px" id="ex-title">Right arm curl</h2>
-        <div class="muted" id="ex-help">
-          Stand or sit so your right arm and shoulder are visible.
-          Start with your arm straight (180°) and curl to 90°.
-          Do not go below 90°.
+        <div class="session-header">
+          <div>
+            <div class="eyebrow">LIVE REHABILITATION</div>
+            <h2 style="margin-top:4px;margin-bottom:4px" id="ex-title">Arm curl</h2>
+            <div class="muted" id="ex-help">
+              Stand or sit so your arm and shoulder are visible.
+              Start with your arm straight (160°) and curl to 100°.
+              Do not bend past 85°.
+            </div>
+          </div>
+          <span class="tag idle" id="session-badge">● IDLE — NOT STARTED</span>
         </div>
 
-        <div class="controls" style="margin-top:12px">
-          <select id="exercise" aria-label="Exercise">
-            <option value="curl">Right arm curl</option>
-            <option value="tap">Finger tapping</option>
-          </select>
-          <button class="primary" id="connect">Connect camera</button>
-          <button id="stop">Stop camera</button>
+        <div class="controls" style="margin-top:14px">
+          <div class="toolbar-group">
+            <select id="exercise" aria-label="Exercise">
+              <option value="curl">Arm curl</option>
+              <option value="tap">Sequential finger opposition</option>
+            </select>
+            <select id="side" aria-label="Body side">
+              <option value="auto">Side: Auto-detect</option>
+              <option value="left">Left side</option>
+              <option value="right">Right side</option>
+            </select>
+          </div>
+
+          <div class="toolbar-group">
+            <button class="primary" id="connect">📷 Connect camera</button>
+            <button id="stop" disabled>⏹ Disconnect</button>
+          </div>
         </div>
 
-        <div class="camera">
+        <!-- Step-by-step strip for Arm Curl right above camera -->
+        <div class="sequence-strip" id="curl-steps-strip">
+          <span class="step-pill" data-curl-step="REST">1. Arm Straight (160°)</span>
+          <span class="step-pill" data-curl-step="RAISING">2. Curl Up (100°)</span>
+          <span class="step-pill" data-curl-step="TOP">3. Hold Peak</span>
+          <span class="step-pill" data-curl-step="LOWER">4. Lower Slowly</span>
+          <span class="muted" style="align-self:center;font-size:12px">→ repeat 5 times</span>
+        </div>
+
+        <!-- Step-by-step strip for Sequential Finger Opposition right above camera -->
+        <div class="sequence-strip" id="sequence-strip" style="display:none">
+          <span class="step-pill" data-finger="index">1. Index</span>
+          <span class="step-pill" data-finger="middle">2. Middle</span>
+          <span class="step-pill" data-finger="ring">3. Ring</span>
+          <span class="step-pill" data-finger="pinky">4. Pinky</span>
+          <span class="muted" style="align-self:center;font-size:12px">→ then reverse back (10 touches)</span>
+        </div>
+
+        <div class="camera" id="camera-frame">
           <img id="videoFeed" alt="Live Python pose tracking feed">
           <div class="placeholder" id="placeholder">
             <div style="font-size:38px">📷</div>
             <b>Camera preview</b>
-            <div class="muted">Connect your camera to begin.</div>
+            <div class="muted">Click "Connect camera" above to begin.</div>
           </div>
         </div>
 
-        <div class="gauge" aria-hidden="true">
-          <div class="z1"></div>
-          <div class="z2"></div>
-          <div id="needle"></div>
+        <!-- Angle gauge ONLY shown for arm curl -->
+        <div id="arm-gauge-container">
+          <div class="gauge" aria-hidden="true">
+            <div class="z1"></div>
+            <div class="z2"></div>
+            <div id="needle"></div>
+          </div>
+          <div class="gauge-scale">
+            <span>0°</span>
+            <span>90° limit</span>
+            <span>180° straight</span>
+          </div>
         </div>
 
-        <div class="gauge-scale">
-          <span>0°</span>
-          <span>90° limit</span>
-          <span>180° open</span>
-        </div>
-
-        <div class="controls" style="margin-top:14px">
-          <button class="primary" id="start">▶ Start exercise</button>
-          <button id="finish">■ Stop &amp; save</button>
-          <button class="danger" id="pain">⚠ Pain — stop now</button>
+        <div class="controls" style="margin-top:16px">
+          <button class="primary" id="start" disabled>▶ Start exercise</button>
+          <button id="finish" disabled>■ Stop &amp; save</button>
+          <button class="danger" id="pain" disabled>⚠ Pain — stop now</button>
         </div>
 
         <div class="feedback" id="camera-status" aria-live="polite">
           Camera not connected.
         </div>
+
+        <!-- Post-Exercise Summary Card -->
+        <div class="summary-card" id="summary-card">
+          <div class="session-header">
+            <div>
+              <div class="eyebrow">POST-SESSION REPORT</div>
+              <h2 style="margin:4px 0 0" id="summary-title">Session Completed</h2>
+            </div>
+            <span class="tag" id="summary-status-tag">Saved</span>
+          </div>
+          <div class="summary-grid" id="summary-grid"></div>
+        </div>
       </div>
 
-      <div class="grid">
+      <!-- Arm Curl Metric Cards (hidden for finger exercise) -->
+      <div class="grid" id="arm-metrics-grid">
         <div class="card">
-          <div class="metric-label" id="angle-label">ELBOW ANGLE</div>
+          <div class="metric-label">ELBOW ANGLE</div>
           <div class="metric" id="angle">—°</div>
-          <small class="muted">Live from Python</small>
+          <small class="muted" id="side-detected">Side: auto</small>
         </div>
         <div class="card">
           <div class="metric-label">REPETITIONS</div>
-          <div class="metric" id="reps">0 / 10</div>
+          <div class="metric" id="arm-reps">0 / 5</div>
           <small class="muted">Session target</small>
         </div>
         <div class="card">
           <div class="metric-label">LOWEST ANGLE</div>
           <div class="metric" id="minangle">—</div>
-          <small class="muted">Curl only</small>
+          <small class="muted">Best curl bend</small>
         </div>
         <div class="card">
-          <div class="metric-label">SESSION TIME</div>
-          <div class="metric" id="duration">00:00</div>
-          <small class="muted">Elapsed time</small>
+          <div class="metric-label">ELAPSED TIME</div>
+          <div class="metric" id="arm-duration">00:00</div>
+          <small class="muted">Session clock</small>
+        </div>
+      </div>
+
+      <!-- Finger Opposition Metric Cards (hidden for arm curl) -->
+      <div class="grid" id="finger-metrics-grid" style="display:none">
+        <div class="card">
+          <div class="metric-label">TOUCHES COMPLETED</div>
+          <div class="metric" id="finger-reps">0 / 10</div>
+          <small class="muted">Forward &amp; backward</small>
+        </div>
+        <div class="card">
+          <div class="metric-label">MOVEMENT ACCURACY</div>
+          <div class="metric" id="finger-accuracy">100%</div>
+          <small class="muted">Correct touches</small>
+        </div>
+        <div class="card">
+          <div class="metric-label">RHYTHM CONSISTENCY</div>
+          <div class="metric" id="finger-consistency">—</div>
+          <small class="muted">Touch pacing steadiness</small>
+        </div>
+        <div class="card">
+          <div class="metric-label">MISSED TOUCHES</div>
+          <div class="metric" id="finger-missed">0</div>
+          <small class="muted">Wrong / incomplete</small>
         </div>
       </div>
 
       <div class="card">
-        <h2>Movement feedback</h2>
+        <h2>Live coaching feedback</h2>
         <div id="feedback" aria-live="polite">
           Connect your camera, choose an exercise and press Start.
         </div>
       </div>
 
       <div class="feedback">
-        Prototype note: joint angles are estimated from a single webcam and are
+        Prototype note: joint angles and finger distances are estimated from a single webcam and are
         approximate. They are not a clinical measurement.
       </div>
     </section>
@@ -566,19 +765,19 @@
           <small class="muted">Saved on this device</small>
         </div>
         <div class="card">
-          <div class="metric-label">AVERAGE SCORE</div>
-          <div class="metric">85%</div>
-          <small class="muted">Illustrative</small>
+          <div class="metric-label">AVG FINGER ACCURACY</div>
+          <div class="metric" id="avg-accuracy">—</div>
+          <small class="muted">Correct touches %</small>
         </div>
         <div class="card">
-          <div class="metric-label">LOWEST CURL ANGLE</div>
-          <div class="metric" id="best-angle">—</div>
-          <small class="muted">From saved sessions</small>
+          <div class="metric-label">AVG TOUCH SPEED</div>
+          <div class="metric" id="avg-speed">—</div>
+          <small class="muted">Seconds per touch</small>
         </div>
         <div class="card">
-          <div class="metric-label">CONSISTENCY</div>
-          <div class="metric">80%</div>
-          <small class="muted">Illustrative</small>
+          <div class="metric-label">MOST DIFFICULT FINGER</div>
+          <div class="metric" id="hardest-finger">—</div>
+          <small class="muted">Highest miss / slowest</small>
         </div>
       </div>
 
@@ -613,7 +812,7 @@
         <div>
           <div class="eyebrow">CLINICIAN WORKSPACE</div>
           <h2>Patient overview</h2>
-          <div class="muted">Review exercise adherence and patient progress.</div>
+          <div class="muted">Review exercise adherence, accuracy, and finger-level difficulty.</div>
         </div>
       </div>
 
@@ -646,13 +845,13 @@
           <span>PATIENT</span><span>ACTIVITY</span><span>SCORE</span><span>STATUS</span>
         </div>
         <div class="patient">
-          <b>Alex Morgan</b><span>Today</span><b>85%</b><span class="tag">Active</span>
+          <b>Alex Morgan</b><span>Today · Ring finger lag</span><b>85%</b><span class="tag">Active</span>
         </div>
         <div class="patient">
-          <b>Jamie Davis</b><span>Yesterday</span><b>78%</b><span class="tag">Review</span>
+          <b>Jamie Davis</b><span>Yesterday · Pinky misses</span><b>78%</b><span class="tag">Review</span>
         </div>
         <div class="patient">
-          <b>Sam Kim</b><span>Today</span><b>91%</b><span class="tag">Active</span>
+          <b>Sam Kim</b><span>Today · Steady rhythm</span><b>91%</b><span class="tag">Active</span>
         </div>
         <div class="patient">
           <b>Taylor Reed</b><span>3 days ago</span><b>69%</b><span class="tag">Review</span>
@@ -769,12 +968,13 @@
   // --------------------------------------------------
 
   const NAMES = {
-    curl: 'Right arm curl',
-    tap: 'Finger tapping'
+    curl: 'Arm curl',
+    tap: 'Sequential finger opposition'
   };
 
   let exercise = 'curl';
-  let target = 10;
+  let side = 'auto';
+  let target = 5;
   let count = 0;
   let running = false;
   let cameraConnected = false;
@@ -785,8 +985,90 @@
   let finishing = false;
 
   // --------------------------------------------------
-  // GENERAL HELPERS
+  // UI STATE, CAMERA BORDER & BUTTON STYLING HELPERS
   // --------------------------------------------------
+
+  function setCameraBorder(state) {
+    // Only apply green/red feedback border while exercise is actively running
+    const frame = $('camera-frame');
+    frame.classList.remove('state-ok', 'state-bad');
+    if (!running) return;
+    if (state === 'bad') {
+      frame.classList.add('state-bad');
+    } else if (state === 'ok') {
+      frame.classList.add('state-ok');
+    }
+  }
+
+  function updateSessionControlsUI(sessionState) {
+    const badge = $('session-badge');
+    const connectBtn = $('connect');
+    const stopCamBtn = $('stop');
+    const startBtn = $('start');
+    const finishBtn = $('finish');
+    const painBtn = $('pain');
+    const statusBox = $('camera-status');
+
+    if (cameraConnected) {
+      connectBtn.textContent = '✓ Camera connected';
+      connectBtn.classList.remove('primary');
+      connectBtn.classList.add('connected');
+      stopCamBtn.disabled = false;
+    } else {
+      connectBtn.textContent = '📷 Connect camera';
+      connectBtn.classList.add('primary');
+      connectBtn.classList.remove('connected');
+      stopCamBtn.disabled = true;
+    }
+
+    startBtn.classList.remove('running-btn');
+    finishBtn.classList.remove('stop-active');
+    painBtn.classList.remove('triggered');
+    statusBox.classList.remove('stopped-banner', 'warn');
+
+    if (sessionState === 'running') {
+      badge.className = 'tag running';
+      badge.textContent = '● SESSION RUNNING';
+
+      startBtn.textContent = '● Running...';
+      startBtn.classList.add('running-btn');
+      startBtn.disabled = true;
+
+      finishBtn.disabled = false;
+      finishBtn.classList.add('stop-active');
+      painBtn.disabled = false;
+
+      $('exercise').disabled = true;
+      $('side').disabled = true;
+      setCameraBorder('ok');
+    } else {
+      setCameraBorder(null);
+      $('exercise').disabled = false;
+      $('side').disabled = false;
+
+      startBtn.textContent = '▶ Start exercise';
+      startBtn.disabled = !cameraConnected;
+      finishBtn.disabled = true;
+      painBtn.disabled = true;
+
+      if (sessionState === 'stopped') {
+        badge.className = 'tag stopped';
+        badge.textContent = '■ SESSION STOPPED & SAVED';
+        statusBox.classList.add('stopped-banner');
+      } else if (sessionState === 'pain') {
+        badge.className = 'tag pain';
+        badge.textContent = '⚠ STOPPED — PAIN REPORTED';
+        painBtn.classList.add('triggered');
+        statusBox.classList.add('warn');
+      } else if (sessionState === 'completed') {
+        badge.className = 'tag done';
+        badge.textContent = '✓ TARGET COMPLETED';
+      } else {
+        badge.className = 'tag idle';
+        badge.textContent = cameraConnected ? '● READY TO START' : '● IDLE — CAMERA OFF';
+      }
+    }
+  }
 
   function status(message) {
     $('camera-status').textContent = message;
@@ -825,8 +1107,20 @@
     if (value !== undefined && value !== null) {
       count = Number(value);
     }
+    $('arm-reps').textContent = `${count} / ${target}`;
+    $('finger-reps').textContent = `${count} / ${target}`;
+  }
 
-    $('reps').textContent = `${count} / ${target}`;
+  function highlightFinger(fingerName) {
+    document.querySelectorAll('[data-finger]').forEach(pill => {
+      pill.classList.toggle('active', pill.dataset.finger === fingerName);
+    });
+  }
+
+  function highlightCurlStep(stepName) {
+    document.querySelectorAll('[data-curl-step]').forEach(pill => {
+      pill.classList.toggle('active', pill.dataset.curlStep === stepName);
+    });
   }
 
   function formatTime(seconds) {
@@ -860,18 +1154,37 @@
 
   function applyExerciseUI() {
     exercise = $('exercise').value;
-    target = exercise === 'curl' ? 10 : 20;
+    side = $('side').value;
+    target = exercise === 'tap' ? 10 : 5;
 
     $('ex-title').textContent = NAMES[exercise];
+    $('summary-card').classList.remove('visible');
 
-    $('angle-label').textContent =
-      exercise === 'curl' ? 'ELBOW ANGLE' : 'FINGER OPENING';
+    const isFinger = exercise === 'tap';
+    $('arm-gauge-container').style.display = isFinger ? 'none' : 'block';
+    $('arm-metrics-grid').style.display = isFinger ? 'none' : 'grid';
+    $('curl-steps-strip').style.display = isFinger ? 'none' : 'flex';
 
-    $('ex-help').textContent = exercise === 'curl'
-      ? 'Stand or sit so your right arm and shoulder are visible. Start with your arm straight (180°) and curl to 90°. Do not go below 90°.'
-      : 'Hold your hand up to the camera. Touch your thumb to your index finger, then open again.';
+    $('finger-metrics-grid').style.display = isFinger ? 'grid' : 'none';
+    $('sequence-strip').style.display = isFinger ? 'flex' : 'none';
 
+    highlightFinger(null);
+    highlightCurlStep(null);
+
+    if (exercise === 'curl') {
+      $('ex-help').textContent =
+        'Stand or sit so your arm and shoulder are visible. Start with your arm straight (160°) and curl to 100°. Do not bend past 85°.';
+    } else {
+      $('ex-help').textContent =
+        'Hold your hand open with fingers extended, then touch your thumb to Index → Middle → Ring → Pinky, and repeat backwards.';
+    }
+
+    $('side-detected').textContent = `Side: ${side}`;
     $('minangle').textContent = '—';
+    $('arm-duration').textContent = '00:00';
+    $('finger-accuracy').textContent = '100%';
+    $('finger-consistency').textContent = '—';
+    $('finger-missed').textContent = '0';
     setReps(0);
     setAngle(null);
   }
@@ -882,8 +1195,12 @@
       $('exercise').value = exercise;
       return;
     }
-
     applyExerciseUI();
+  });
+
+  $('side').addEventListener('change', () => {
+    side = $('side').value;
+    $('side-detected').textContent = `Side: ${side}`;
   });
 
   // --------------------------------------------------
@@ -908,7 +1225,8 @@
       $('videoFeed').style.display = 'block';
       $('placeholder').style.display = 'none';
 
-      status('Camera connected. Choose an exercise and press Start.');
+      updateSessionControlsUI('idle');
+      status('Camera connected. Choose an exercise and press "Start exercise".');
       say('Camera connected. You are ready to begin.');
 
     } catch (error) {
@@ -936,7 +1254,8 @@
     $('videoFeed').style.display = 'none';
     $('placeholder').style.display = 'block';
 
-    status('Camera stopped.');
+    updateSessionControlsUI('idle');
+    status('Camera disconnected.');
   }
 
   $('stop').addEventListener('click', stopCamera);
@@ -954,6 +1273,7 @@
     }
 
     exercise = $('exercise').value;
+    side = $('side').value;
     applyExerciseUI();
 
     $('start').disabled = true;
@@ -961,7 +1281,7 @@
     try {
       const result = await api('/api/session/start', {
         method: 'POST',
-        body: JSON.stringify({ exercise })
+        body: JSON.stringify({ exercise, side })
       });
 
       count = Number(result.reps ?? 0);
@@ -971,21 +1291,18 @@
       finishing = false;
       sessionStartedAt = Date.now();
 
-      $('minangle').textContent = '—';
-      $('duration').textContent = '00:00';
+      updateSessionControlsUI('running');
 
-      say(
-        exercise === 'curl'
-          ? 'Start with your arm straight, then curl up to 90°.'
-          : 'Start tapping your thumb and index finger.'
-      );
+      if (exercise === 'curl') {
+        highlightCurlStep('REST');
+        say('Start with your arm straight, then curl up to 100°.');
+      } else {
+        say('Hold your hand open with fingers extended, then touch thumb to Index finger.');
+      }
 
-      status('Exercise running...');
+      status('Exercise in progress — press "Stop & save" when finished.');
 
-      // Ask Python for the latest tracking result four times per second.
-      pollingTimer = setInterval(updateTracking, 250);
-
-      // Update the session clock once per second.
+      pollingTimer = setInterval(updateTracking, 200);
       durationTimer = setInterval(updateDuration, 1000);
 
       updateTracking();
@@ -993,8 +1310,7 @@
     } catch (error) {
       say('Could not start exercise: ' + error.message, true);
       status('Could not start exercise.');
-    } finally {
-      $('start').disabled = false;
+      updateSessionControlsUI('idle');
     }
   });
 
@@ -1008,26 +1324,50 @@
     try {
       const data = await api('/api/tracking');
 
+      const isBad = Boolean(
+        data.in_danger ||
+        data.message_key === 'stop' ||
+        data.message_key === 'pain' ||
+        (data.finger_metrics && data.finger_metrics.in_error)
+      );
+
+      setCameraBorder(isBad ? 'bad' : 'ok');
+
       if (data.pose_detected === false) {
         say(
-          exercise === 'curl'
-            ? 'Step back so your right arm is visible.'
-            : 'Show your hand clearly to the camera.'
+          exercise === 'tap'
+            ? 'Show your open hand clearly to the camera.'
+            : 'Step back so your arm and shoulder are visible.'
         );
       } else if (data.feedback) {
-        say(data.feedback);
-      }
-
-      if (data.angle !== undefined && data.angle !== null) {
-        setAngle(data.angle);
+        say(data.feedback, isBad);
       }
 
       if (data.reps !== undefined && data.reps !== null) {
         setReps(data.reps);
       }
 
-      if (data.min_angle !== undefined && data.min_angle !== null) {
-        $('minangle').textContent = Math.round(data.min_angle) + '°';
+      if (exercise === 'tap' && data.finger_metrics) {
+        const fm = data.finger_metrics;
+        highlightFinger(fm.target_finger);
+        $('finger-accuracy').textContent = `${fm.accuracy_pct}%`;
+        $('finger-consistency').textContent = fm.consistency_pct !== null ? `${fm.consistency_pct}%` : '—';
+        $('finger-missed').textContent = String(fm.missed_touches);
+      } else {
+        if (data.side) {
+          $('side-detected').textContent = `Tracking: ${data.side.toUpperCase()} arm`;
+        }
+        if (data.angle !== undefined && data.angle !== null) {
+          setAngle(data.angle);
+        }
+        if (data.min_angle !== undefined && data.min_angle !== null) {
+          $('minangle').textContent = Math.round(data.min_angle) + '°';
+        }
+        if (data.message_key === 'lower') {
+          highlightCurlStep('LOWER');
+        } else if (data.state) {
+          highlightCurlStep(data.state);
+        }
       }
 
       if (data.feedback) {
@@ -1046,9 +1386,68 @@
 
   function updateDuration() {
     if (!running) return;
-
     const seconds = Math.floor((Date.now() - sessionStartedAt) / 1000);
-    $('duration').textContent = formatTime(seconds);
+    $('arm-duration').textContent = formatTime(seconds);
+  }
+
+  // --------------------------------------------------
+  // RENDER POST-SESSION SUMMARY CARD
+  // --------------------------------------------------
+
+  function renderSessionSummary(summary, elapsedSeconds, reason) {
+    const card = $('summary-card');
+    const grid = $('summary-grid');
+    const title = $('summary-title');
+    const tag = $('summary-status-tag');
+
+    const totalSec = summary?.duration_sec ?? elapsedSeconds;
+    const activeSec = summary?.active_sec ?? elapsedSeconds;
+    const detectedSide = summary?.side ? summary.side.toUpperCase() : side.toUpperCase();
+
+    title.textContent = `${NAMES[exercise]} — Session Summary`;
+    tag.textContent = {
+      completed: '✓ Completed',
+      manual: '■ Stopped & Saved',
+      pain: '⚠ Pain Stop'
+    }[reason] || 'Saved';
+
+    let items = [
+      { label: 'TOTAL TIME TAKEN', value: `${totalSec}s (${formatTime(Math.round(totalSec))})` },
+      { label: 'ACTIVE MOVEMENT TIME', value: `${activeSec}s` },
+      { label: 'COMPLETED REPS', value: `${count} / ${target}` },
+      { label: 'DETECTED SIDE', value: detectedSide },
+    ];
+
+    if (summary?.finger_metrics) {
+      const fm = summary.finger_metrics;
+      items.push(
+        { label: 'MOVEMENT ACCURACY', value: `${fm.accuracy_pct}%` },
+        { label: 'AVG TOUCH PACE', value: fm.avg_touch_sec !== null ? `${fm.avg_touch_sec}s / touch` : '—' },
+        { label: 'RHYTHM CONSISTENCY', value: fm.consistency_pct !== null ? `${fm.consistency_pct}%` : '—' },
+        { label: 'HARDEST FINGER', value: fm.hardest_finger ? fm.hardest_finger.toUpperCase() : 'None (0 misses)' }
+      );
+    } else {
+      const rom = summary?.rom_deg !== null && summary?.rom_deg !== undefined ? `${summary.rom_deg}°` : '—';
+      const minA = summary?.lowest_angle !== null && summary?.lowest_angle !== undefined ? `${Math.round(summary.lowest_angle)}°` : '—';
+      const maxA = summary?.highest_angle !== null && summary?.highest_angle !== undefined ? `${Math.round(summary.highest_angle)}°` : '—';
+      const pace = summary?.avg_rep_sec !== null && summary?.avg_rep_sec !== undefined ? `${summary.avg_rep_sec}s / rep` : '—';
+
+      items.push(
+        { label: 'RANGE OF MOTION (ROM)', value: rom },
+        { label: 'ANGLE SPAN (MIN → MAX)', value: `${minA} → ${maxA}` },
+        { label: 'AVG REP PACE', value: pace },
+        { label: 'PARTIAL / OUT-OF-RANGE', value: `${summary?.partial_reps ?? 0} partial / ${summary?.out_of_range ?? 0} over` }
+      );
+    }
+
+    grid.innerHTML = items.map(item => `
+      <div class="summary-item">
+        <span class="metric-label">${item.label}</span>
+        <b>${item.value}</b>
+      </div>
+    `).join('');
+
+    card.classList.add('visible');
   }
 
   // --------------------------------------------------
@@ -1066,6 +1465,8 @@
 
     pollingTimer = null;
     durationTimer = null;
+    highlightFinger(null);
+    highlightCurlStep(null);
 
     const elapsedSeconds = Math.round((Date.now() - sessionStartedAt) / 1000);
 
@@ -1074,7 +1475,7 @@
     try {
       result = await api('/api/session/stop', {
         method: 'POST',
-        body: JSON.stringify({ reason })   // 'pain' is recorded in the saved session
+        body: JSON.stringify({ reason })
       });
     } catch (error) {
       console.error('Could not stop backend session:', error);
@@ -1086,36 +1487,48 @@
 
     setReps(count);
 
+    const summary = result.summary || null;
     const lowestAngle =
       result.min_angle !== undefined && result.min_angle !== null
         ? Math.round(result.min_angle)
         : null;
 
-    if (lowestAngle !== null && exercise === 'curl') {
+    if (lowestAngle !== null && exercise !== 'tap') {
       $('minangle').textContent = lowestAngle + '°';
     }
+
+    const fingerMetrics = summary?.finger_metrics || null;
 
     const session = {
       date: new Date().toISOString(),
       exercise,
+      side: summary?.side || side,
       reps: count,
       target,
-      seconds: elapsedSeconds,
-      minAngle: exercise === 'curl' ? lowestAngle : null,
+      seconds: summary?.duration_sec ?? elapsedSeconds,
+      activeSeconds: summary?.active_sec ?? elapsedSeconds,
+      romDeg: summary?.rom_deg ?? null,
+      avgRepSec: summary?.avg_rep_sec ?? null,
+      minAngle: exercise !== 'tap' ? lowestAngle : null,
+      fingerMetrics,
       endedBy: reason
     };
 
     saveSession(session);
+    renderSessionSummary(summary, elapsedSeconds, reason);
 
     if (reason === 'pain') {
+      updateSessionControlsUI('pain');
       say('Exercise stopped because of pain. Rest, and tell your physiotherapist.', true);
-      status('Stopped: pain reported.');
+      status('Session stopped: pain reported. Summary saved below.');
     } else if (reason === 'completed') {
-      say('Target reached. Well done!');
-      status('Target reached. Well done!');
+      updateSessionControlsUI('completed');
+      say('Target reached! Review your session summary below.');
+      status('Target reached! Session completed and saved.');
     } else {
-      say(`Session saved: ${count} reps in ${elapsedSeconds} seconds.`);
-      status('Session stopped and saved.');
+      updateSessionControlsUI('stopped');
+      say(`Session stopped (${count}/${target} reps). Review your summary below.`);
+      status('Session stopped and saved. Review your statistics below.');
     }
 
     finishing = false;
@@ -1159,12 +1572,48 @@
       0
     );
 
-    const angles = sessions
-      .filter(session => session.exercise === 'curl' && session.minAngle != null)
-      .map(session => Number(session.minAngle));
+    if (sessions.length) {
+      const completedCount = sessions.filter(
+        s => s.endedBy === 'completed' || Number(s.reps) >= Number(s.target)
+      ).length;
+      const rate = Math.round((completedCount / sessions.length) * 100);
+      $('home-completion').textContent = `${rate}%`;
+      $('home-completion-sub').textContent = `${completedCount} of ${sessions.length} goals met`;
 
-    $('best-angle').textContent =
-      angles.length ? Math.min(...angles) + '°' : '—';
+      const totalActiveSec = Math.round(
+        sessions.reduce((sum, s) => sum + Number(s.activeSeconds ?? s.seconds ?? 0), 0)
+      );
+      const mins = Math.floor(totalActiveSec / 60);
+      const secs = totalActiveSec % 60;
+      $('home-active-time').textContent = `${mins}m ${secs}s`;
+    } else {
+      $('home-completion').textContent = '—';
+      $('home-completion-sub').textContent = 'Target goals reached';
+      $('home-active-time').textContent = '0m 0s';
+    }
+
+    const fingerSessions = sessions.filter(s => s.exercise === 'tap' && s.fingerMetrics);
+    if (fingerSessions.length) {
+      const latest = fingerSessions[fingerSessions.length - 1].fingerMetrics;
+      const avgAcc = (
+        fingerSessions.reduce((sum, s) => sum + Number(s.fingerMetrics.accuracy_pct || 0), 0) /
+        fingerSessions.length
+      ).toFixed(1);
+      $('avg-accuracy').textContent = `${avgAcc}%`;
+
+      const speeds = fingerSessions
+        .map(s => s.fingerMetrics.avg_touch_sec)
+        .filter(v => v !== null && v !== undefined);
+      $('avg-speed').textContent = speeds.length
+        ? `${(speeds.reduce((a, b) => a + b, 0) / speeds.length).toFixed(2)}s`
+        : '—';
+
+      $('hardest-finger').textContent = latest.hardest_finger ? latest.hardest_finger.toUpperCase() : 'None';
+    } else {
+      $('avg-accuracy').textContent = '—';
+      $('avg-speed').textContent = '—';
+      $('hardest-finger').textContent = '—';
+    }
 
     const recent = $('recent');
     recent.innerHTML = '';
@@ -1181,14 +1630,25 @@
       const item = document.createElement('div');
       item.className = 'exercise';
 
-      const icon = session.exercise === 'curl' ? '💪 ' : '🖐️ ';
+      const icon = session.exercise === 'tap' ? '🖐️ ' : '💪 ';
       const name = NAMES[session.exercise] || session.exercise;
+      const sideText = session.side ? ` (${session.side})` : '';
       const date = new Date(session.date).toLocaleString();
+
+      let detail = `${icon}${name}${sideText} · ${date} · ${session.reps}/${session.target} reps · ${session.seconds}s`;
+      if (session.fingerMetrics) {
+        const fm = session.fingerMetrics;
+        detail += ` · Acc: ${fm.accuracy_pct}% · Consistency: ${fm.consistency_pct}% · Missed: ${fm.missed_touches}`;
+        if (fm.hardest_finger) {
+          detail += ` · Hardest: ${fm.hardest_finger}`;
+        }
+      } else if (session.romDeg !== null && session.romDeg !== undefined) {
+        detail += ` · ROM: ${session.romDeg}°`;
+      }
 
       const description = document.createElement('div');
       description.style.flex = '1';
-      description.textContent =
-        `${icon}${name} · ${date} · ${session.reps}/${session.target} reps`;
+      description.textContent = detail;
 
       const tag = document.createElement('span');
       tag.className = 'tag';
@@ -1220,19 +1680,23 @@
 
     const lines = sessions.map(session => {
       const name = NAMES[session.exercise] || session.exercise;
+      const fm = session.fingerMetrics;
+      const extra = fm
+        ? `accuracy: ${fm.accuracy_pct}% | avg speed: ${fm.avg_touch_sec ?? 'n/a'}s | consistency: ${fm.consistency_pct}% | missed: ${fm.missed_touches} | hardest finger: ${fm.hardest_finger ?? 'none'}`
+        : `side: ${session.side ?? 'auto'} | ROM: ${session.romDeg ?? 'n/a'} deg | avg pace: ${session.avgRepSec ?? 'n/a'}s/rep`;
 
       return [
         session.date,
         name,
         `${session.reps}/${session.target} reps`,
         `${session.seconds}s`,
-        `lowest angle: ${session.minAngle ?? 'n/a'}`,
+        extra,
         `ended by: ${session.endedBy}`
       ].join(' | ');
     });
 
     const report = [
-      'GEM — Progress Report',
+      'GEM — ABILITY Progress Report',
       '',
       'Prototype data, not clinical measurements.',
       `Sessions: ${sessions.length}`,
@@ -1274,9 +1738,9 @@
   // --------------------------------------------------
 
   applyExerciseUI();
+  updateSessionControlsUI('idle');
   renderHistory();
 
-  // Ensure the camera is stopped if the page is closed.
   window.addEventListener('beforeunload', () => {
     if (pollingTimer) clearInterval(pollingTimer);
     if (durationTimer) clearInterval(durationTimer);

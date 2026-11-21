@@ -1,12 +1,9 @@
 """
 Rehab Assistant web app — Flask backend.
 
-Step 1  pose_detector.py   webcam → body + hand landmarks
-Step 2  analyzer.py        landmarks → angle, reps, safety, feedback, session summary
-Step 3  frontend/gem.html  patient screen (polls /api/tracking)
-
-Run:   python main.py          then open http://127.0.0.1:5000
-Test without a webcam:  REHAB_VIDEO=test.mp4 python main.py   (plays a video file instead)
+Supports:
+  - Arm curl (left, right, or auto-detected arm — 5 reps)
+  - Sequential finger opposition (Index -> Middle -> Ring -> Pinky -> Ring -> Middle — 10 touches)
 """
 import json
 import os
@@ -32,16 +29,14 @@ SESSION_DIR = os.path.join(BASE_DIR, "sessions")
 POSE_MODEL = os.path.join(MODEL_DIR, "pose_landmarker_full.task")
 HAND_MODEL = os.path.join(MODEL_DIR, "hand_landmarker.task")
 
-VIDEO_SOURCE = os.environ.get("REHAB_VIDEO")   # None = webcam
-MIRROR = VIDEO_SOURCE is None                  # the webcam image is flipped like a mirror
+VIDEO_SOURCE = os.environ.get("REHAB_VIDEO")
+MIRROR = VIDEO_SOURCE is None
 
-# Prescriptions for the exercises in the patient screen (keys match the <select> values).
-# Later these come from the therapist (Step 4 / Step 5).
 PRESCRIPTIONS = {
-    "curl": {"exercise": "elbow_curl", "side": "right",
-             "rest_angle": 160, "target_angle": 100, "safe_limit": 85, "reps": 10},
-    "tap": {"exercise": "finger_tap", "side": "auto",
-            "rest_angle": 90, "target_angle": 45, "reps": 20},
+    "curl": {"exercise": "elbow_curl", "side": "auto",
+             "rest_angle": 160, "target_angle": 100, "safe_limit": 85, "reps": 5},
+    "tap": {"exercise": "finger_opposition", "side": "auto",
+            "rest_angle": 90, "target_angle": 34, "reps": 10},
 }
 
 app = Flask(__name__)
@@ -56,7 +51,7 @@ lock = threading.Lock()
 camera_thread = None
 camera_stop = threading.Event()
 latest_frame = None
-analyzer = None          # RehabAnalyzer for the running session (Step 2)
+analyzer = None
 
 tracking = {
     "camera_connected": False,
@@ -66,8 +61,8 @@ tracking = {
     "reps": 0,
     "feedback": "Connect your camera to begin.",
     "exercise": "curl",
+    "side": "auto",
     "running": False,
-    # from Step 2
     "partial_reps": 0,
     "target_reps": PRESCRIPTIONS["curl"]["reps"],
     "out_of_range": 0,
@@ -76,8 +71,9 @@ tracking = {
     "progress": 0.0,
     "message_key": None,
     "status": None,
-    "min_angle": None,   # lowest angle this session (shown as "LOWEST ANGLE")
+    "min_angle": None,
     "max_angle": None,
+    "finger_metrics": None,
 }
 
 
@@ -86,16 +82,16 @@ tracking = {
 # --------------------------------------------------
 
 def process_tracking(data, t_ms, width, height):
-    """Feed one frame of Step 1 data to the analyzer and update the shared state.
-    Returns the analyzer result (or None when no session is running)."""
     with lock:
         hands = data.get("hands") or {}
-        uses_hands = PRESCRIPTIONS[tracking["exercise"]]["exercise"] == "finger_tap"
+        uses_hands = PRESCRIPTIONS[tracking["exercise"]]["exercise"] in ("finger_tap", "finger_opposition")
         tracking["pose_detected"] = bool(hands) if uses_hands else data.get("pose") is not None
         tracking["hands"] = len(hands)
 
         if not tracking["running"] or analyzer is None:
             tracking["angle"] = None
+            tracking["finger_metrics"] = None
+            tracking["in_danger"] = False
             if tracking["camera_connected"]:
                 tracking["feedback"] = "Camera connected. Press Start exercise."
             return None
@@ -109,41 +105,54 @@ def process_tracking(data, t_ms, width, height):
             out_of_range=r["out_of_range"],
             in_danger=r["in_danger"],
             state=r["state"],
+            side=r["side"] or tracking["side"],
             progress=round(r["progress"], 3),
             message_key=r["message_key"],
             status=r["status"],
             min_angle=r["lowest_angle"],
             max_angle=r["highest_angle"],
             feedback=r["message"],
+            finger_metrics=r.get("finger_metrics"),
         )
         for e in r["events"]:
-            if e["type"] in ("rep", "partial_rep", "out_of_range", "set_complete", "side_selected"):
+            if e["type"] in ("rep", "partial_rep", "missed_touch", "out_of_range", "set_complete", "side_selected"):
                 print(f"[{t_ms / 1000:7.2f}s] {e}")
         return r
 
 
 def draw_overlay(img, r, reps, pose_detected, num_hands):
-    """Status text on the video feed."""
     h, w = img.shape[:2]
-    cv2.putText(img, f"Body: {'Detected' if pose_detected else 'Not detected'}", (20, 35),
+    cv2.putText(img, f"Detected: {'Yes' if pose_detected else 'No'} | Hands: {num_hands} | Reps: {reps}", (20, 35),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
-    cv2.putText(img, f"Hands: {num_hands} | Reps: {reps}", (20, 70),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 255), 2)
+
     if r is not None:
-        if r["angle"] is not None:
-            cv2.putText(img, f"{r['angle']:.0f} deg", (20, 110), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (255, 255, 255), 2)
+        fm = r.get("finger_metrics")
+        if fm:
+            cv2.putText(
+                img,
+                f"Target: {fm['target_finger'].upper()} ({fm['sequence_step']}/{fm['sequence_length']}) | Acc: {fm['accuracy_pct']}%",
+                (20, 70),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.7,
+                (0, 255, 255),
+                2,
+            )
+        elif r["angle"] is not None:
+            side_lbl = f" ({r['side'].upper()})" if r.get("side") else ""
+            cv2.putText(img, f"{r['angle']:.0f} deg{side_lbl}", (20, 75), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255, 255, 255), 2)
+
         bw = min(300, w - 40)
-        cv2.rectangle(img, (20, 125), (20 + bw, 139), (90, 90, 90), -1)
-        cv2.rectangle(img, (20, 125), (20 + int(bw * r["progress"]), 139), (0, 200, 255), -1)
-        bad = r["message_key"] in ("stop", "hidden", "pain")
+        cv2.rectangle(img, (20, 95), (20 + bw, 109), (90, 90, 90), -1)
+        cv2.rectangle(img, (20, 95), (20 + int(bw * r["progress"]), 109), (0, 200, 255), -1)
+        bad = r["in_danger"] or r["message_key"] in ("stop", "hidden", "pain")
         cv2.rectangle(img, (0, h - 46), (w, h), (30, 30, 30), -1)
-        cv2.putText(img, r["message"], (16, h - 16), cv2.FONT_HERSHEY_SIMPLEX, 0.7,
+        cv2.putText(img, r["message"], (16, h - 16), cv2.FONT_HERSHEY_SIMPLEX, 0.68,
                     (60, 60, 255) if bad else (255, 255, 255), 2)
     return img
 
 
 # --------------------------------------------------
-# CAMERA AND MEDIAPIPE THREAD (Step 1)
+# CAMERA AND MEDIAPIPE THREAD
 # --------------------------------------------------
 
 def open_capture():
@@ -163,7 +172,7 @@ def camera_worker():
     if not cap.isOpened():
         with lock:
             tracking["camera_connected"] = False
-            tracking["feedback"] = "Cannot access webcam. Check macOS camera permissions."
+            tracking["feedback"] = "Cannot access webcam. Check camera permissions."
         return
 
     detector = None
@@ -180,23 +189,23 @@ def camera_worker():
         while not camera_stop.is_set():
             success, frame = cap.read()
             if not success:
-                if VIDEO_SOURCE:                      # loop the test video
+                if VIDEO_SOURCE:
                     cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
                     continue
                 time.sleep(0.03)
                 continue
 
             if MIRROR:
-                frame = cv2.flip(frame, 1)            # mirror webcam
+                frame = cv2.flip(frame, 1)
 
             if VIDEO_SOURCE:
-                time.sleep(1 / fps)                   # play at real speed
+                time.sleep(1 / fps)
             timestamp_ms = max(int((time.monotonic() - start_time) * 1000), last_ts + 1)
             last_ts = timestamp_ms
             height, width = frame.shape[:2]
 
-            data = detector.process_frame(frame, timestamp_ms)                 # Step 1
-            r = process_tracking(data, timestamp_ms, width, height)            # Step 2
+            data = detector.process_frame(frame, timestamp_ms)
+            r = process_tracking(data, timestamp_ms, width, height)
 
             annotated = detector.draw_skeleton(frame, data, vis_threshold=0.5)
             with lock:
@@ -223,10 +232,6 @@ def camera_worker():
             tracking["running"] = False
             tracking["feedback"] = "Camera disconnected."
 
-
-# --------------------------------------------------
-# CAMERA CONTROL
-# --------------------------------------------------
 
 def start_camera():
     global camera_thread
@@ -299,11 +304,16 @@ def api_session_start():
         if exercise not in PRESCRIPTIONS:
             return jsonify({"success": False, "error": f"Unknown exercise '{exercise}'."}), 400
 
-        rx = PRESCRIPTIONS[exercise]
+        side = body.get("side", "auto")
+        if side not in ("auto", "left", "right"):
+            side = "auto"
+
+        rx = {**PRESCRIPTIONS[exercise], "side": side}
         analyzer = RehabAnalyzer(rx, mirrored=MIRROR)
-        tracking.update(exercise=exercise, running=True, reps=0, partial_reps=0, out_of_range=0,
+        tracking.update(exercise=exercise, side=side, running=True, reps=0, partial_reps=0, out_of_range=0,
                         in_danger=False, angle=None, min_angle=None, max_angle=None, progress=0.0,
-                        state="REST", target_reps=rx["reps"], message_key=None, status=None)
+                        state="REST", target_reps=rx["reps"], message_key=None, status=None,
+                        finger_metrics=None)
 
     return jsonify({"success": True, "reps": 0, "target_reps": rx["reps"], "prescription": rx})
 
@@ -311,10 +321,11 @@ def api_session_start():
 @app.route("/api/session/stop", methods=["POST"])
 def api_session_stop():
     body = request.get_json(silent=True) or {}
-    reason = body.get("reason", "manual")       # 'manual' | 'pain' | 'completed'
+    reason = body.get("reason", "manual")
 
     with lock:
         tracking["running"] = False
+        tracking["in_danger"] = False
         if analyzer is None:
             return jsonify({"success": True, "reps": tracking["reps"], "min_angle": None, "summary": None})
         if reason == "pain":
@@ -324,7 +335,6 @@ def api_session_stop():
                        saved_at=time.strftime("%Y-%m-%dT%H:%M:%S"))
         tracking["reps"] = summary["reps"]
 
-    # Save the session result (Step 4 can read these, or replace this with a database insert)
     os.makedirs(SESSION_DIR, exist_ok=True)
     path = os.path.join(SESSION_DIR, f"session_{time.strftime('%Y%m%d_%H%M%S')}.json")
     with open(path, "w") as f:
@@ -341,13 +351,7 @@ def api_tracking():
     return jsonify(result)
 
 
-# --------------------------------------------------
-# START SERVER
-# --------------------------------------------------
-
 if __name__ == "__main__":
     print("GEM backend starting...")
     print("Open http://127.0.0.1:5000 in your browser.")
-    if VIDEO_SOURCE:
-        print(f"Using test video instead of the webcam: {VIDEO_SOURCE}")
     app.run(host="127.0.0.1", port=5000, debug=False, threaded=True, use_reloader=False)

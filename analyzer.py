@@ -2,35 +2,8 @@
 analyzer.py — Rehab Assistant, Step 2 (exercise logic).
 
 Turns Step 1's tracking data (PoseDetector.process_frame output) into
-angle → smoothing → visibility check → rep counting → safe-range check →
-feedback message → session summary.
-
-    from analyzer import RehabAnalyzer
-    an = RehabAnalyzer({"exercise": "elbow_curl", "side": "right",
-                        "rest_angle": 160, "target_angle": 100, "safe_limit": 85, "reps": 10},
-                       mirrored=True)              # the webcam image is flipped before detection
-    r = an.update(tracking_data, timestamp_ms, width, height)   # every frame
-    # r["angle"], r["reps"], r["partial_reps"], r["message"], r["in_danger"], r["events"] ...
-    an.report_pain(timestamp_ms)                   # pain button
-    summary = an.finish(timestamp_ms)              # session result (JSON-serialisable dict)
-
-Exercises
-  side_arm_raise         hip–shoulder–elbow, angle goes UP   (rest 15 → target 90, safe 120)
-  seated_knee_extension  hip–knee–ankle,     angle goes UP   (rest 90 → target 160)
-  elbow_curl             shoulder–elbow–wrist, angle goes DOWN (rest 160 → target 100, safe 85)
-  finger_tap             thumb–index opening (hand landmarks), goes DOWN (open 90 → closed 45)
-
-Prescription keys: rest_angle, target_angle, safe_limit, reps, side ('left' | 'right' | 'auto').
-For "UP" exercises safe_limit is an upper limit; for "DOWN" exercises it is a lower limit.
-Older keys still work: min_angle / minAngle = rest_angle, safe_max / safeMax = safe_limit.
-
-update() accepts the whole tracking dict ({"pose": ..., "hands": ...}), or just the pose
-part (Person 1's name-keyed dict, or a MediaPipe-style list), or None.
-
-Mirroring: if the frame is flipped (cv2.flip(frame, 1)) BEFORE detection, pass mirrored=True.
-Pose labels then refer to the mirrored body, so they are swapped back; hand labels from
-MediaPipe's hand landmarker already assume a mirrored (selfie) image, so they are swapped
-only when mirrored=False. Either way, `side` means the patient's real side.
+angle / finger sequence → smoothing → visibility check → rep counting → safe-range check →
+feedback message → detailed session summary.
 """
 from __future__ import annotations
 
@@ -49,24 +22,30 @@ POSE_LANDMARK_NAMES = [
     "left_foot_index", "right_foot_index",
 ]
 
-# source "pose": angle at the middle of `joints`.
-# source "hand": finger opening = 180 × (thumb–index distance ÷ wrist–middle-knuckle distance), capped at 180.
+FINGER_TIPS = {
+    "index": "index_finger_tip",
+    "middle": "middle_finger_tip",
+    "ring": "ring_finger_tip",
+    "pinky": "pinky_tip",
+}
+
+OPPOSITION_SEQUENCE = ["index", "middle", "ring", "pinky", "ring", "middle"]
+
 EXERCISES: dict[str, dict[str, Any]] = {
     "side_arm_raise": {
-        "label": "Side arm raise", "view": "front", "body_part": "arm", "source": "pose", "direction": "up",
+        "label": "Side shoulder raise", "view": "front", "body_part": "arm", "source": "pose", "direction": "up",
         "joints": {"left": ("left_hip", "left_shoulder", "left_elbow"),
                    "right": ("right_hip", "right_shoulder", "right_elbow")},
-        "defaults": {"rest_angle": 15, "target_angle": 90, "safe_limit": 120, "reps": 10},
-        "messages": {"raise": "Raise your arm a bit more",
-                     "lower": "Good, now lower slowly",
-                     "partial": "Nearly there - try to reach the target next time"},
+        "defaults": {"rest_angle": 20, "target_angle": 90, "safe_limit": 120, "reps": 5},
+        "messages": {"raise": "Raise your arm a bit higher",
+                     "lower": "Good, now lower your arm slowly",
+                     "partial": "Nearly there - try to reach shoulder height next time"},
     },
     "seated_knee_extension": {
         "label": "Seated knee extension", "view": "side", "body_part": "leg", "source": "pose", "direction": "up",
         "joints": {"left": ("left_hip", "left_knee", "left_ankle"),
                    "right": ("right_hip", "right_knee", "right_ankle")},
-        # a 3-point angle cannot exceed 180°, so safe_limit 180 never triggers
-        "defaults": {"rest_angle": 90, "target_angle": 160, "safe_limit": 180, "reps": 10},
+        "defaults": {"rest_angle": 90, "target_angle": 160, "safe_limit": 180, "reps": 5},
         "messages": {"raise": "Straighten your knee a bit more",
                      "lower": "Good, now bend it back slowly",
                      "partial": "Nearly there - try to straighten a little further next time"},
@@ -75,7 +54,7 @@ EXERCISES: dict[str, dict[str, Any]] = {
         "label": "Arm curl", "view": "front or side", "body_part": "arm", "source": "pose", "direction": "down",
         "joints": {"left": ("left_shoulder", "left_elbow", "left_wrist"),
                    "right": ("right_shoulder", "right_elbow", "right_wrist")},
-        "defaults": {"rest_angle": 160, "target_angle": 100, "safe_limit": 85, "reps": 10},
+        "defaults": {"rest_angle": 160, "target_angle": 100, "safe_limit": 85, "reps": 5},
         "messages": {"raise": "Slowly bend your elbow a bit more",
                      "lower": "Good! Now slowly straighten your arm",
                      "partial": "Nearly there - bend a little further next time",
@@ -84,8 +63,7 @@ EXERCISES: dict[str, dict[str, Any]] = {
     },
     "finger_tap": {
         "label": "Finger tapping", "view": "hand to camera", "body_part": "hand", "source": "hand", "direction": "down",
-        "defaults": {"rest_angle": 90, "target_angle": 45, "safe_limit": 0, "reps": 20},
-        # taps are quick: shorter minimum rep, lighter smoothing, bigger allowed jumps
+        "defaults": {"rest_angle": 90, "target_angle": 45, "safe_limit": 0, "reps": 10},
         "options": {"min_rep_sec": 0.15, "smoothing_alpha": 0.7, "max_jump_deg": 90, "min_partial_amplitude_deg": 8},
         "messages": {"raise": "Touch your thumb to your index finger",
                      "lower": "Good! Now open your fingers",
@@ -93,15 +71,38 @@ EXERCISES: dict[str, dict[str, Any]] = {
                      "hidden": "Show your hand to the camera",
                      "rest_first": "Open your hand to start"},
     },
+    "finger_opposition": {
+        "label": "Sequential finger opposition",
+        "view": "hand to camera",
+        "body_part": "hand",
+        "source": "hand_sequence",
+        "direction": "down",
+        "defaults": {"rest_angle": 90, "target_angle": 34, "safe_limit": 0, "reps": 10},
+        "options": {
+            "min_rep_sec": 0.12,
+            "smoothing_alpha": 0.75,
+            "max_jump_deg": 100,
+            "min_partial_amplitude_deg": 10,
+            "touch_threshold_deg": 34,
+            "release_threshold_deg": 52,
+        },
+        "messages": {
+            "raise": "Touch your thumb to the highlighted finger",
+            "lower": "Good! Open your fingers before the next touch",
+            "partial": "Close the gap completely until fingertips touch",
+            "hidden": "Show your open palm clearly to the camera",
+            "rest_first": "Hold your hand open with fingers extended to start",
+        },
+    },
 }
 
 DEFAULTS = {
-    "smoothing_alpha": 0.4,          # EMA weight at 30 fps (adjusted for other frame rates)
+    "smoothing_alpha": 0.4,
     "visibility_threshold": 0.5,
     "hidden_grace_sec": 0.3,
-    "start_fraction": 0.2,           # rep starts 20% of the way from rest to target
-    "hysteresis_deg": 5,             # rep ends 5° back towards rest from the start threshold
-    "target_tolerance_deg": 3,       # target counts as reached 3° early
+    "start_fraction": 0.2,
+    "hysteresis_deg": 5,
+    "target_tolerance_deg": 3,
     "min_rep_sec": 0.5,
     "min_partial_amplitude_deg": 10,
     "max_jump_deg": 35,
@@ -110,6 +111,8 @@ DEFAULTS = {
     "safe_release_deg": 3,
     "message_hold_sec": 1.0,
     "partial_message_sec": 2.0,
+    "touch_threshold_deg": 34,
+    "release_threshold_deg": 52,
 }
 
 MSG_PRIO = {"pain": 4, "stop": 3, "hidden": 2, "done": 1, "raise": 1, "lower": 1,
@@ -138,9 +141,22 @@ def _r1(x):
     return None if x is None else round(x * 10) / 10
 
 
-# ---------------- reusable helpers (also for Step 5) ----------------
+def _compute_consistency(durations: list[float]) -> float | None:
+    """Computes rhythm consistency (0–100%) from active touch durations."""
+    if not durations:
+        return None
+    if len(durations) == 1:
+        return 100.0
+    mean_d = sum(durations) / len(durations)
+    if mean_d <= 0:
+        return 100.0
+    std_d = math.sqrt(sum((d - mean_d) ** 2 for d in durations) / len(durations))
+    cv = std_d / mean_d
+    # Smooth, bounded score: CV=0 -> 100%, CV=0.25 -> 80%, CV=0.5 -> 66.7%, CV=1.0 -> 50%
+    return round(100.0 / (1.0 + cv), 1)
+
+
 def compute_angle(a, b, c, width: float = 1, height: float = 1):
-    """Angle at b in degrees. a, b, c are (x, y). Pass width/height for normalised coords."""
     ax, ay = (a[0] - b[0]) * width, (a[1] - b[1]) * height
     cx, cy = (c[0] - b[0]) * width, (c[1] - b[1]) * height
     na, nc = math.hypot(ax, ay), math.hypot(cx, cy)
@@ -151,8 +167,6 @@ def compute_angle(a, b, c, width: float = 1, height: float = 1):
 
 
 class Smoother:
-    """Exponential moving average that behaves the same at any frame rate."""
-
     def __init__(self, alpha: float = 0.4, ref_frame_ms: float = 1000 / 30):
         self.alpha, self.ref, self.value = alpha, ref_frame_ms, None
 
@@ -178,12 +192,11 @@ def percentile(values, p: float):
     return v[lo] + (v[hi] - v[lo]) * (i - lo)
 
 
-def prescription_from_demo(exercise: str, angles, margin_deg: float = 10, reps: int = 10, side: str = "auto") -> dict:
-    """Step 5: angles recorded while the therapist demonstrates → prescription draft."""
+def prescription_from_demo(exercise: str, angles, margin_deg: float = 10, reps: int = 5, side: str = "auto") -> dict:
     lo, hi = percentile(angles, 0.05), percentile(angles, 0.95)
     if lo is None:
         raise ValueError("No angles recorded")
-    if EXERCISES[exercise]["direction"] == "down":   # e.g. curl: rest = straight (high), target = bent (low)
+    if EXERCISES[exercise]["direction"] == "down":
         return {"exercise": exercise, "side": side, "reps": reps, "rest_angle": round(hi),
                 "target_angle": round(lo), "safe_limit": max(0, round(lo - margin_deg))}
     return {"exercise": exercise, "side": side, "reps": reps, "rest_angle": round(lo),
@@ -191,7 +204,6 @@ def prescription_from_demo(exercise: str, angles, margin_deg: float = 10, reps: 
 
 
 def _point(part, name: str, width: float, height: float):
-    """(x_px, y_px, visibility) from a name-keyed dict or a MediaPipe-style list; None if missing."""
     if part is None:
         return None
     if isinstance(part, dict):
@@ -211,7 +223,6 @@ def _point(part, name: str, width: float, height: float):
     return (x * width, y * height, 1.0 if vis is None else vis)
 
 
-# ---------------- the analyzer ----------------
 class RehabAnalyzer:
     def __init__(self, prescription: dict, mirrored: bool = False, **options):
         prescription = {_KEY_ALIASES.get(k, k): v for k, v in prescription.items()}
@@ -227,7 +238,6 @@ class RehabAnalyzer:
         self.down = ex["direction"] == "down"
         self._validate(rx)
 
-        # Internally every exercise "goes up": for DOWN exercises we work with 180 − angle.
         f = self._internal
         self.lo, self.tg, self.sm = f(rx["rest_angle"]), f(rx["target_angle"]), f(rx["safe_limit"])
         o = self.o
@@ -240,7 +250,7 @@ class RehabAnalyzer:
     def _internal(self, v):
         return None if v is None else (180 - v if self.down else v)
 
-    _display = _internal   # the transform is its own inverse
+    _display = _internal
 
     def _validate(self, rx):
         rest, tg, safe = rx["rest_angle"], rx["target_angle"], rx["safe_limit"]
@@ -276,19 +286,17 @@ class RehabAnalyzer:
 
     # ---- measuring ----
     def _pose_label(self, side: str) -> str:
-        """Patient side → MediaPipe pose label (swapped if the image was mirrored)."""
         if not self.mirrored:
             return side
         return "left" if side == "right" else "right"
 
     def _hand_label(self, side: str) -> str:
-        """Patient side → MediaPipe hand label ('Left'/'Right'). Hand labels assume a mirrored image."""
         if not self.mirrored:
             side = "left" if side == "right" else "right"
         return side.capitalize()
 
     def _pick_side(self, data):
-        if self.ex["source"] == "hand":
+        if self.ex["source"] in ("hand", "hand_sequence"):
             hands = data.get("hands") or {}
             for side in ("right", "left"):
                 if self._hand_label(side) in hands:
@@ -297,19 +305,20 @@ class RehabAnalyzer:
         pose = data.get("pose")
         if pose is None:
             return None
+
         def vis(side):
             total = 0.0
             for name in self.ex["joints"][self._pose_label(side)]:
                 p = _point(pose, name, 1, 1)
                 total += p[2] if p else 0.0
             return total
+
         l, r = vis("left"), vis("right")
         if max(l, r) < 3 * self.o["visibility_threshold"]:
             return None
         return "left" if l > r else "right"
 
     def _measure(self, data, width, height):
-        """Returns (raw display angle or None, visible?)."""
         thr = self.o["visibility_threshold"]
         if self.ex["source"] == "hand":
             hand = (data.get("hands") or {}).get(self._hand_label(self.s["side"]))
@@ -328,6 +337,30 @@ class RehabAnalyzer:
         if any(p is None or p[2] < thr for p in pts):
             return None, False
         return compute_angle(pts[0][:2], pts[1][:2], pts[2][:2]), True
+
+    def _measure_all_fingers(self, data, width, height):
+        thr = self.o["visibility_threshold"]
+        hand = (data.get("hands") or {}).get(self._hand_label(self.s["side"]))
+        if not hand:
+            return None, False
+
+        req = ["wrist", "middle_finger_mcp", "thumb_tip", *FINGER_TIPS.values()]
+        pts = {name: _point(hand, name, width, height) for name in req}
+        if any(p is None or p[2] < thr for p in pts.values()):
+            return None, False
+
+        scale = math.hypot(pts["wrist"][0] - pts["middle_finger_mcp"][0],
+                           pts["wrist"][1] - pts["middle_finger_mcp"][1])
+        if not scale:
+            return None, True
+
+        thumb = pts["thumb_tip"]
+        gaps = {}
+        for fname, tip_name in FINGER_TIPS.items():
+            tip = pts[tip_name]
+            dist = math.hypot(thumb[0] - tip[0], thumb[1] - tip[1])
+            gaps[fname] = min(180.0, (dist / scale) * 180.0)
+        return gaps, True
 
     # ---- internals ----
     def _emit(self, events, e):
@@ -391,14 +424,14 @@ class RehabAnalyzer:
             self._apply_message(self._choose_message(status, t), t)
         v = self.smoother.value
         return {
-            "status": status,                  # 'ok' | 'hidden' | 'stopped' | 'waiting'
+            "status": status,
             "angle": _r1(d(v)), "raw_angle": _r1(s["raw"]),
             "lowest_angle": _r1(s["lowest"]), "highest_angle": _r1(s["highest"]),
             "state": s["state"], "side": s["side"],
             "reps": s["reps"], "partial_reps": s["partial_reps"], "target_reps": rx["reps"],
             "out_of_range": s["out_of_range"], "in_danger": s["latched"],
             "set_complete": s["set_complete"],
-            "progress": 0.0 if v is None else max(0.0, min(1.0, (v - self.lo) / self.range)),  # 0 = rest, 1 = target
+            "progress": 0.0 if v is None else max(0.0, min(1.0, (v - self.lo) / self.range)),
             "thresholds": {"start": _r1(d(self.th["start"])), "end": _r1(d(self.th["end"])),
                            "reach": _r1(d(self.th["reach"])), "rest": rx["rest_angle"],
                            "target": rx["target_angle"], "safe_limit": rx["safe_limit"]},
@@ -406,11 +439,203 @@ class RehabAnalyzer:
             "events": events,
         }
 
+    def _update_finger_sequence(self, data, t: float, width: float, height: float) -> dict:
+        s, o = self.s, self.o
+        events: list = []
+        if s["first_t"] is None:
+            s["first_t"] = t
+        dt = 1000 / 30 if s["last_t"] is None else max(0.0, t - s["last_t"])
+        s["last_t"] = t
+
+        if "seq" not in s:
+            s["seq"] = {
+                "step_idx": 0,
+                "phase": "WAIT_OPEN",
+                "step_start_t": t,
+                "move_start_t": None,
+                "min_target_gap": 180.0,
+                "attempted": False,
+                "wrong_touch_latched": False,
+                "in_error": False,
+                "correct_touches": 0,
+                "missed_touches": 0,
+                "per_finger": {
+                    f: {"attempts": 0, "hits": 0, "misses": 0, "durations_sec": [], "min_gaps": []}
+                    for f in FINGER_TIPS
+                },
+                "touch_durations": [],
+                "custom_msg": None,
+            }
+        seq = s["seq"]
+
+        if s["stopped"]:
+            return self._result("stopped", t, events)
+
+        if not s["side"]:
+            s["side"] = self._pick_side(data)
+            if not s["side"]:
+                return self._result("waiting", t, events)
+            self._emit(events, {"type": "side_selected", "t": t, "side": s["side"]})
+
+        gaps, visible = self._measure_all_fingers(data, width, height)
+        if not visible or gaps is None:
+            if s["hidden_since"] is None:
+                s["hidden_since"] = t
+            if not s["hidden"] and t - s["hidden_since"] >= o["hidden_grace_sec"] * 1000:
+                s["hidden"] = True
+                self._emit(events, {"type": "hidden", "t": t})
+            return self._result("hidden" if s["hidden"] else "ok", t, events)
+
+        if s["hidden"]:
+            self._emit(events, {"type": "visible", "t": t})
+            self.smoother.reset()
+        s["hidden"], s["hidden_since"] = False, None
+        s["active_ms"] += min(dt, 250)
+
+        target_finger = OPPOSITION_SEQUENCE[seq["step_idx"] % len(OPPOSITION_SEQUENCE)]
+        target_gap = gaps[target_finger]
+        touch_th = o.get("touch_threshold_deg", 34)
+        release_th = o.get("release_threshold_deg", 52)
+
+        s["raw"] = target_gap
+        a = self.smoother.push(self._internal(target_gap), dt)
+        s["max_internal"] = a if s["max_internal"] is None else max(s["max_internal"], a)
+        disp = self._display(a)
+        s["lowest"] = disp if s["lowest"] is None else min(s["lowest"], disp)
+        s["highest"] = disp if s["highest"] is None else max(s["highest"], disp)
+
+        other_fingers = {f: g for f, g in gaps.items() if f != target_finger}
+        closest_other = min(other_fingers, key=other_fingers.get)
+        closest_other_gap = other_fingers[closest_other]
+
+        if seq["phase"] == "WAIT_OPEN":
+            s["state"] = "REST"
+            seq["in_error"] = False
+            if all(g >= release_th for g in gaps.values()):
+                s["armed"] = True
+                seq["phase"] = "SEEK_TOUCH"
+                seq["step_start_t"] = t
+                seq["move_start_t"] = None
+                seq["min_target_gap"] = 180.0
+                seq["attempted"] = False
+                seq["wrong_touch_latched"] = False
+                seq["custom_msg"] = f"Touch thumb to {target_finger.upper()} finger"
+            else:
+                seq["custom_msg"] = "Hold hand open with all fingers extended"
+
+        elif seq["phase"] == "SEEK_TOUCH":
+            s["state"] = "RAISING"
+            seq["min_target_gap"] = min(seq["min_target_gap"], disp)
+
+            # Start active movement timer when thumb begins closing toward target finger
+            if disp < release_th - 6:
+                if seq["move_start_t"] is None:
+                    seq["move_start_t"] = t
+                seq["attempted"] = True
+
+            # 1. Correct finger touched
+            if disp <= touch_th:
+                start_ref = seq["move_start_t"] if seq["move_start_t"] is not None else seq["step_start_t"]
+                dur = max(0.08, min(5.0, (t - start_ref) / 1000.0))
+
+                fstat = seq["per_finger"][target_finger]
+                fstat["attempts"] += 1
+                fstat["hits"] += 1
+                fstat["durations_sec"].append(round(dur, 2))
+                fstat["min_gaps"].append(_r1(disp))
+
+                seq["correct_touches"] += 1
+                seq["touch_durations"].append(dur)
+                seq["in_error"] = False
+                s["reps"] = seq["correct_touches"]
+                s["rep_log"].append({
+                    "n": s["reps"], "type": "full", "finger": target_finger,
+                    "peak": _r1(disp), "duration_sec": round(dur, 2), "t": t
+                })
+                self._emit(events, {"type": "rep", "t": t, "count": s["reps"], "finger": target_finger, "duration_sec": round(dur, 2)})
+
+                if not s["set_complete"] and s["reps"] >= self.rx["reps"]:
+                    s["set_complete"] = True
+                    self._emit(events, {"type": "set_complete", "t": t, "reps": s["reps"]})
+
+                seq["phase"] = "WAIT_RELEASE"
+                s["state"] = "TOP"
+                seq["custom_msg"] = f"Good! Open hand ({target_finger} complete)"
+
+            # 2. Wrong finger touched
+            elif closest_other_gap <= touch_th:
+                seq["in_error"] = True
+                if not seq["wrong_touch_latched"]:
+                    seq["wrong_touch_latched"] = True
+                    seq["missed_touches"] += 1
+                    seq["per_finger"][target_finger]["attempts"] += 1
+                    seq["per_finger"][target_finger]["misses"] += 1
+                    s["partial_reps"] = seq["missed_touches"]
+                    self._emit(events, {"type": "missed_touch", "t": t, "expected": target_finger, "touched": closest_other})
+                seq["custom_msg"] = f"Wrong finger ({closest_other}) — touch {target_finger.upper()} instead"
+
+            # 3. Incomplete reach pulled back without touching
+            elif seq["attempted"] and disp >= release_th:
+                seq["in_error"] = True
+                seq["missed_touches"] += 1
+                seq["per_finger"][target_finger]["attempts"] += 1
+                seq["per_finger"][target_finger]["misses"] += 1
+                seq["per_finger"][target_finger]["min_gaps"].append(_r1(seq["min_target_gap"]))
+                s["partial_reps"] = seq["missed_touches"]
+                seq["attempted"] = False
+                seq["move_start_t"] = None
+                seq["min_target_gap"] = 180.0
+                self._emit(events, {"type": "partial_rep", "t": t, "finger": target_finger, "min_gap": _r1(seq["min_target_gap"])})
+                seq["custom_msg"] = f"Missed touch — bring thumb all the way to {target_finger.upper()}"
+            else:
+                if closest_other_gap > touch_th + 6:
+                    seq["wrong_touch_latched"] = False
+                seq["custom_msg"] = f"Touch thumb to {target_finger.upper()} finger ({s['reps']}/{self.rx['reps']})"
+
+        elif seq["phase"] == "WAIT_RELEASE":
+            s["state"] = "TOP"
+            seq["in_error"] = False
+            if disp >= release_th and closest_other_gap >= release_th:
+                seq["step_idx"] += 1
+                next_finger = OPPOSITION_SEQUENCE[seq["step_idx"] % len(OPPOSITION_SEQUENCE)]
+                seq["phase"] = "SEEK_TOUCH"
+                s["state"] = "REST"
+                seq["step_start_t"] = t
+                seq["move_start_t"] = None
+                seq["min_target_gap"] = 180.0
+                seq["attempted"] = False
+                seq["wrong_touch_latched"] = False
+                seq["custom_msg"] = f"Next: touch thumb to {next_finger.upper()} finger"
+
+        res = self._result("ok", t, events)
+        total_attempts = seq["correct_touches"] + seq["missed_touches"]
+        accuracy = round((seq["correct_touches"] / total_attempts) * 100, 1) if total_attempts else 100.0
+        avg_time = round(sum(seq["touch_durations"]) / len(seq["touch_durations"]), 2) if seq["touch_durations"] else None
+        consistency = _compute_consistency(seq["touch_durations"])
+
+        res["message"] = seq["custom_msg"] or res["message"]
+        res["in_danger"] = seq["in_error"]
+        res["finger_metrics"] = {
+            "target_finger": target_finger,
+            "sequence_step": (seq["step_idx"] % len(OPPOSITION_SEQUENCE)) + 1,
+            "sequence_length": len(OPPOSITION_SEQUENCE),
+            "accuracy_pct": accuracy,
+            "avg_touch_sec": avg_time,
+            "consistency_pct": consistency,
+            "missed_touches": seq["missed_touches"],
+            "in_error": seq["in_error"],
+            "per_finger": seq["per_finger"],
+        }
+        return res
+
     # ---- public API ----
     def update(self, data, t: float, width: float = 1, height: float = 1) -> dict:
-        """data: tracking dict {"pose", "hands"}, or just the pose part, or None. t: milliseconds."""
         if not (isinstance(data, dict) and ("pose" in data or "hands" in data)):
             data = {"pose": data, "hands": {}}
+
+        if self.ex["source"] == "hand_sequence":
+            return self._update_finger_sequence(data, t, width, height)
+
         s, o, th = self.s, self.o, self.th
         events: list = []
         if s["first_t"] is None:
@@ -455,7 +680,6 @@ class RehabAnalyzer:
         s["lowest"] = disp if s["lowest"] is None else min(s["lowest"], disp)
         s["highest"] = disp if s["highest"] is None else max(s["highest"], disp)
 
-        # safe range
         if a > self.sm:
             s["over_count"] += 1
             if not s["latched"] and s["over_count"] >= o["safe_frames"]:
@@ -468,7 +692,6 @@ class RehabAnalyzer:
                 s["latched"] = False
                 self._emit(events, {"type": "back_in_range", "t": t, "angle": _r1(disp)})
 
-        # rep state machine (only counts reps that start from the resting position)
         if s["state"] == "REST" and not s["armed"]:
             if a <= th["start"]:
                 s["armed"] = True
@@ -508,16 +731,25 @@ class RehabAnalyzer:
     def finish(self, t: float | None = None) -> dict:
         s, rx = self.s, self.rx
         t = s["last_t"] if t is None else t
-        if s["state"] == "TOP" and t is not None:   # reached the target but not back yet — still counts
+        if s["state"] == "TOP" and t is not None and "seq" not in s:
             self._end_rep(True, t, [])
         rel = lambda x: None if x is None or s["first_t"] is None else _r1((x - s["first_t"]) / 1000)
-        return {
+
+        rep_durs = [r["duration_sec"] for r in s["rep_log"] if r.get("duration_sec") is not None]
+        avg_rep_sec = round(sum(rep_durs) / len(rep_durs), 2) if rep_durs else None
+        rom_deg = None
+        if s["lowest"] is not None and s["highest"] is not None:
+            rom_deg = _r1(s["highest"] - s["lowest"])
+
+        summary = {
             "exercise": rx["exercise"], "side": s["side"], "direction": self.ex["direction"],
             "prescription": {k: rx[k] for k in ("rest_angle", "target_angle", "safe_limit", "reps")},
             "reps": s["reps"], "partial_reps": s["partial_reps"], "out_of_range": s["out_of_range"],
-            "best_angle": _r1(self._display(s["max_internal"])),   # closest to the target
+            "best_angle": _r1(self._display(s["max_internal"])),
             "lowest_angle": _r1(s["lowest"]), "highest_angle": _r1(s["highest"]),
-            "max_angle": _r1(s["highest"]),                         # kept for older code
+            "max_angle": _r1(s["highest"]),
+            "rom_deg": rom_deg,
+            "avg_rep_sec": avg_rep_sec,
             "duration_sec": 0 if s["first_t"] is None or t is None else _r1((t - s["first_t"]) / 1000),
             "active_sec": _r1(s["active_ms"] / 1000),
             "pain": s["pain"], "pain_at_sec": rel(s["pain_at"]),
@@ -525,3 +757,33 @@ class RehabAnalyzer:
             "rep_details": [{**x, "t": rel(x["t"])} for x in s["rep_log"]],
             "events": [{**e, "t": rel(e["t"])} for e in s["log"]],
         }
+
+        if "seq" in s:
+            seq = s["seq"]
+            total_att = seq["correct_touches"] + seq["missed_touches"]
+            acc = round((seq["correct_touches"] / total_att) * 100, 1) if total_att else 0.0
+            durs = seq["touch_durations"]
+            avg_t = round(sum(durs) / len(durs), 2) if durs else None
+            cons = _compute_consistency(durs) or 0.0
+
+            hardest = None
+            hardest_score = (2.0, -1.0)
+            for fname, st in seq["per_finger"].items():
+                if st["attempts"] > 0:
+                    hit_rate = st["hits"] / st["attempts"]
+                    f_avg = sum(st["durations_sec"]) / len(st["durations_sec"]) if st["durations_sec"] else 999.0
+                    score = (hit_rate, -f_avg)
+                    if score < hardest_score:
+                        hardest_score = score
+                        hardest = fname
+
+            summary["finger_metrics"] = {
+                "accuracy_pct": acc,
+                "avg_touch_sec": avg_t,
+                "consistency_pct": cons,
+                "missed_touches": seq["missed_touches"],
+                "hardest_finger": hardest,
+                "per_finger": seq["per_finger"],
+            }
+
+        return summary
