@@ -6,3 +6,6 @@ __pycache__/
 sessions/
 instance/
 *.db
+session_*.json
+frames.json
+*.angles.csv

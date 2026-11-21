@@ -131,9 +131,13 @@ class PoseDetector:
 
         return {"pose": pose_data, "hands": hands_data}
 
-    def draw_skeleton(self, frame_bgr: np.ndarray, tracking_data: dict, vis_threshold: float = 0.5) -> np.ndarray:
+    def draw_skeleton(self, frame_bgr: np.ndarray, tracking_data: dict, vis_threshold: float = 0.5,
+                      show_hand_labels: bool = True) -> np.ndarray:
         """
         Draws both the body skeleton and detailed finger skeletons on the frame.
+        show_hand_labels: print MediaPipe's raw "Left/Right Hand" guess next to each wrist.
+        The raw guess can be wrong (back of the hand, mirrored video), so the web app
+        turns it off and shows the side the analyzer resolved instead.
         """
         annotated = frame_bgr.copy()
         pose_data = tracking_data.get("pose")
@@ -164,6 +168,9 @@ class PoseDetector:
             # Finger joints (yellow dots)
             for data in joints.values():
                 cv2.circle(annotated, (data["x_px"], data["y_px"]), 4, (0, 255, 255), -1)
+
+            if not show_hand_labels:
+                continue
 
             # Label the hand near the wrist
             wrist = joints["wrist"]
