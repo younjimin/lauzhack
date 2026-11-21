@@ -126,13 +126,12 @@ check("5. Hand leaves the frame: 'Show your hand' message, count kept",
       "hidden" in msgs and any(e["type"] == "hidden" for e in s["events"]) and s["reps"] >= 10,
       f"reps={s['reps']} messages={sorted(m for m in msgs if m)}")
 
-# 6. hand labels: hand landmarker assumes a mirrored image
-an = RehabAnalyzer({**TAP, "side": "right"}, mirrored=True)
-r1 = an.update({"pose": None, "hands": tap_hands(110, "Right")}, 0, W, H)
-an2 = RehabAnalyzer({**TAP, "side": "right"}, mirrored=False)
-r2 = an2.update({"pose": None, "hands": tap_hands(110, "Right")}, 0, W, H)
+# 6. hand labels (two hands, no body in view): the hand landmarker assumes a mirrored image
+both = {"pose": None, "hands": {**tap_hands(110, "Right"), **tap_hands(60, "Left")}}
+r1 = RehabAnalyzer({**TAP, "side": "right"}, mirrored=True).update(both, 0, W, H)
+r2 = RehabAnalyzer({**TAP, "side": "right"}, mirrored=False).update(both, 0, W, H)
 check("6. Hand side: label 'Right' is the real right hand only on a mirrored image",
-      r1["angle"] is not None and r2["angle"] is None, f"mirrored angle={r1['angle']} | unmirrored angle={r2['angle']}")
+      r1["angle"] == 110 and r2["angle"] == 60, f"mirrored → {r1['angle']} (Right) | unmirrored → {r2['angle']} (Left)")
 
 # 7. validation and Step 5 helper for a 'down' exercise
 errors = 0

@@ -9,6 +9,7 @@ Takes Step 1's tracking data (`PoseDetector.process_frame()` output) and returns
 | `main.py` | Flask app: Step 1 → **Step 2** → patient screen. Saves each session to `sessions/*.json` |
 | `main_with_step2.py` | Debug runner in an OpenCV window (no web server). Use it to tune thresholds or check accuracy on test videos |
 | `test_step2_exercises.py` | Tests: curl, finger tap, mirroring, validation, and the Flask API. `python test_step2_exercises.py` |
+| `test_hand_side.py` | Tests that the real hand is tracked when MediaPipe's Left/Right hand label is wrong or flickers. `python test_hand_side.py` |
 
 ## Run
 ```bash
@@ -42,3 +43,13 @@ Prescriptions for the web app are in `PRESCRIPTIONS` at the top of `main.py` (la
 
 ## Left / right
 `main.py` flips the webcam image before detection, so the analyzer is created with `mirrored=True` and `side: "right"` means the patient's **real** right arm. (MediaPipe pose labels swap on a flipped image; hand labels don't, because the hand model already assumes a selfie image.) With `REHAB_VIDEO` the image is not flipped and `mirrored=False` is used.
+
+**Hands.** MediaPipe guesses "Left"/"Right" for a hand from how it looks, so the guess is often wrong when the back of the hand faces the camera or the hand is small, and it can flicker between frames. The analyzer therefore:
+1. matches each hand's wrist to the nearest wrist of the pose skeleton when the body is in view (reliable);
+2. keeps tracking the only visible hand when its label flips and no body is in view;
+3. in `side: "auto"`, reports the side seen most often, not the first frame's guess.
+
+The raw "Left Hand / Right Hand" text is no longer drawn on the video; the overlay shows `Tracking: RIGHT` (the side the analyzer uses).
+
+## Voice feedback (frontend/gem.html)
+On by default (🔊 button on the exercise screen, or Settings → Audio feedback). Mistakes and safety messages (`in_danger`, `finger_metrics.in_error`, pain) are spoken at once, never cut off, and repeated every 4 s while they last; normal coaching waits until the current sentence has finished.
