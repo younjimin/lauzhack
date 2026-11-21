@@ -273,7 +273,7 @@ def save_session_to_db(patient_id, summary):
          summary.get("partial_reps"), summary.get("out_of_range"), int(bool(summary.get("pain"))),
          int(bool(summary.get("completed"))), summary.get("ended_by"), summary.get("duration_sec"),
          summary.get("lowest_angle"), summary.get("highest_angle"), summary.get("rom_deg"),
-         fm.get("accuracy_pct"), json.dumps(summary), summary.get("saved_at") or now()))
+         fm.get("accuracy_pct", summary.get("accuracy_pct")), json.dumps(summary), summary.get("saved_at") or now()))
     db.commit()
     return cur.lastrowid
 
@@ -291,9 +291,26 @@ def _session_dict(row):
 
 
 def _list_sessions(patient_id, limit=50):
-    rows = get_db().execute(f"SELECT {SESSION_COLUMNS} FROM sessions WHERE patient_id = ? "
+    rows = get_db().execute(f"SELECT {SESSION_COLUMNS}, summary_json FROM sessions WHERE patient_id = ? "
                             "ORDER BY created_at DESC, id DESC LIMIT ?", (patient_id, limit)).fetchall()
-    return [_session_dict(r) for r in rows]
+    out = []
+    for r in rows:
+        d = _session_dict(r)
+        try:
+            summary = json.loads(d.pop("summary_json") or "{}")
+        except ValueError:
+            summary = {}
+        d["breaks"] = len(summary.get("breaks") or [])          # breathing breaks during the session
+        dt = summary.get("dual_task")                            # dual-task mode results (compact)
+        d["dual"] = None if not dt else {
+            "baseline_in_zone_pct": (dt.get("baseline") or {}).get("in_zone_pct"),
+            "dual_in_zone_pct": (dt.get("dual") or {}).get("in_zone_pct"),
+            "cost_pct": dt.get("dual_task_cost_pct"),
+            "accuracy_pct": (dt.get("cognitive") or {}).get("accuracy_pct"),
+            "mean_rt_sec": (dt.get("cognitive") or {}).get("mean_rt_sec"),
+        }
+        out.append(d)
+    return out
 
 
 def _stats(patient_id):

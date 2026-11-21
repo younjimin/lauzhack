@@ -7,6 +7,8 @@ Pages: /login, / (patient mode selector + physical & cognitive screens), /doctor
 Supports:
   - Arm curl (left, right, or auto-detected arm — 5 reps)
   - Sequential finger opposition (Index -> Middle -> Ring -> Pinky -> Ring -> Middle — 10 touches)
+  - Dual-task mode: hold a posture while answering questions by head tilt (rehab_modes.py, /api/dual/*)
+  - Fatigue detection → guided breathing break (pause/resume), shoulder-tension check
 """
 import json
 import os
@@ -19,6 +21,7 @@ from flask import Flask, Response, jsonify, redirect, request, send_from_directo
 from analyzer import RehabAnalyzer
 from auth_db import current_user, init_auth, login_required, patient_prescriptions, save_session_to_db
 from pose_detector import PoseDetector
+from rehab_modes import POSTURES, DualTaskSession, FatigueMonitor, shoulder_ratio
 
 
 # --------------------------------------------------
@@ -69,6 +72,10 @@ camera_stop = threading.Event()
 latest_frame = None
 analyzer = None
 session_owner = None
+fatigue = None          # FatigueMonitor for the running physical session
+session_breaks = []     # breathing breaks taken during the running physical session
+dual = None             # DualTaskSession (dual-task mode)
+dual_owner = None
 
 tracking = {
     "camera_connected": False,
@@ -91,6 +98,10 @@ tracking = {
     "min_angle": None,
     "max_angle": None,
     "finger_metrics": None,
+    "paused": False,          # breathing break in progress
+    "fatigue_alert": None,    # {"id", "reason", "message"} when movement quality drops sharply
+    "shoulder_ratio": None,   # neck length / shoulder width (smaller = shoulders raised)
+    "dual_active": False,
 }
 
 
@@ -100,6 +111,11 @@ tracking = {
 
 def process_tracking(data, t_ms, width, height):
     with lock:
+        tracking["shoulder_ratio"] = shoulder_ratio(data.get("pose"), width, height)
+        if dual is not None and dual.phase not in ("done", "stopped"):
+            dual.update(data, t_ms, width, height)          # dual-task mode owns the camera frames
+            return None
+
         hands = data.get("hands") or {}
         uses_hands = PRESCRIPTIONS[tracking["exercise"]]["exercise"] in ("finger_tap", "finger_opposition")
         tracking["pose_detected"] = bool(hands) if uses_hands else data.get("pose") is not None
@@ -111,6 +127,11 @@ def process_tracking(data, t_ms, width, height):
             tracking["in_danger"] = False
             if tracking["camera_connected"]:
                 tracking["feedback"] = "Camera connected. Press Start exercise."
+            return None
+
+        if tracking["paused"]:
+            tracking["feedback"] = "Paused — breathing break"
+            tracking["in_danger"] = False
             return None
 
         r = analyzer.update(data, t_ms, width, height)
@@ -134,6 +155,11 @@ def process_tracking(data, t_ms, width, height):
         for e in r["events"]:
             if e["type"] in ("rep", "partial_rep", "missed_touch", "out_of_range", "set_complete", "side_selected"):
                 print(f"[{t_ms / 1000:7.2f}s] {e}")
+            if fatigue is not None and not r["set_complete"]:
+                alert = fatigue.feed(e)
+                if alert:
+                    tracking["fatigue_alert"] = alert
+                    print(f"[{t_ms / 1000:7.2f}s] fatigue: {alert}")
         return r
 
 
@@ -188,6 +214,22 @@ def draw_overlay(img, r, reps, pose_detected, num_hands):
             (60, 60, 255) if bad else (255, 255, 255),
             2,
         )
+    return img
+
+
+def draw_dual_overlay(img, ds):
+    h, w = img.shape[:2]
+    angle = "--" if ds["angle"] is None else f"{ds['angle']:.0f} deg"
+    color = (0, 200, 0) if ds["in_zone"] else (60, 60, 255)
+    cv2.putText(img, f"Dual-task | {ds['phase'].upper()} | {angle} (target {ds['zone'][0]:.0f}-{ds['zone'][1]:.0f})",
+                (20, 35), cv2.FONT_HERSHEY_SIMPLEX, 0.65, color, 2)
+    head = ds["head"]
+    if head["direction"]:
+        cv2.putText(img, f"Head: {head['direction'].upper()} {int(head['progress'] * 100)}%", (20, 70),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 255, 255), 2)
+    cv2.rectangle(img, (0, h - 46), (w, h), (30, 30, 30), -1)
+    cv2.putText(img, ds["motor_message"] or "", (16, h - 16), cv2.FONT_HERSHEY_SIMPLEX, 0.68,
+                (255, 255, 255) if ds["in_zone"] else (60, 60, 255), 2)
     return img
 
 
@@ -250,7 +292,12 @@ def camera_worker():
             annotated = detector.draw_skeleton(frame, data, vis_threshold=0.5, show_hand_labels=False)
             with lock:
                 reps, pose_detected, num_hands = tracking["reps"], tracking["pose_detected"], tracking["hands"]
-            draw_overlay(annotated, r, reps, pose_detected, num_hands)
+            with lock:
+                ds = dual.state() if dual is not None and dual.phase not in ("done", "stopped") else None
+            if ds:
+                draw_dual_overlay(annotated, ds)
+            else:
+                draw_overlay(annotated, r, reps, pose_detected, num_hands)
 
             ok, buffer = cv2.imencode(".jpg", annotated, [cv2.IMWRITE_JPEG_QUALITY, 80])
             if ok:
@@ -318,10 +365,17 @@ def home():
         return redirect("/doctor")
     with open(os.path.join(FRONTEND_DIR, "gem.html"), encoding="utf-8") as f:
         page = f.read()
-    tags = '<script src="/cognitive.js" defer></script>\n<script src="/gem-auth.js" defer></script>'
+    tags = ('<script src="/cognitive.js" defer></script>\n<script src="/gem-auth.js" defer></script>\n'
+            '<script src="/rehab-modes.js" defer></script>')
     idx = page.lower().rfind("</body>")
     page = page[:idx] + tags + page[idx:] if idx != -1 else page + tags
     return Response(page, mimetype="text/html")
+
+
+@app.route("/rehab-modes.js")
+@login_required()
+def rehab_modes_js():
+    return send_from_directory(FRONTEND_DIR, "rehab-modes.js", mimetype="application/javascript")
 
 
 @app.route("/cognitive.js")
@@ -367,7 +421,7 @@ def api_camera_stop():
 @app.route("/api/session/start", methods=["POST"])
 @login_required("patient")
 def api_session_start():
-    global analyzer, session_owner
+    global analyzer, session_owner, fatigue, session_breaks
     body = request.get_json(silent=True) or {}
     patient_id = current_user()["id"]
     my_prescriptions = patient_prescriptions(patient_id)
@@ -375,6 +429,8 @@ def api_session_start():
     with lock:
         if not tracking["camera_connected"]:
             return jsonify({"success": False, "error": "Camera is not connected."}), 400
+        if dual is not None and dual.phase not in ("done", "stopped"):
+            return jsonify({"success": False, "error": "Finish the dual-task session first."}), 409
 
         exercise = body.get("exercise", tracking["exercise"])
         if exercise not in PRESCRIPTIONS:
@@ -388,6 +444,8 @@ def api_session_start():
         rx = {**rx, "side": side}
         analyzer = RehabAnalyzer(rx, mirrored=MIRROR)
         session_owner = patient_id
+        fatigue = FatigueMonitor(analyzer.rx, sequence=analyzer.ex["source"] == "hand_sequence")
+        session_breaks = []
         tracking.update(
             exercise=exercise,
             side=side,
@@ -405,6 +463,8 @@ def api_session_start():
             message_key=None,
             status=None,
             finger_metrics=None,
+            paused=False,
+            fatigue_alert=None,
         )
 
     return jsonify({"success": True, "reps": 0, "target_reps": rx["reps"], "prescription": rx})
@@ -420,6 +480,8 @@ def api_session_stop():
     with lock:
         tracking["running"] = False
         tracking["in_danger"] = False
+        tracking["paused"] = False
+        tracking["fatigue_alert"] = None
         if analyzer is None:
             return jsonify({"success": True, "reps": tracking["reps"], "min_angle": None, "summary": None})
         if reason == "pain":
@@ -429,6 +491,7 @@ def api_session_stop():
             ui_exercise=tracking["exercise"],
             ended_by=reason,
             saved_at=time.strftime("%Y-%m-%dT%H:%M:%S"),
+            breaks=list(session_breaks),
         )
         tracking["reps"] = summary["reps"]
         owner = session_owner or current_user()["id"]
@@ -448,6 +511,116 @@ def api_session_stop():
         "session_id": session_id,
         "summary": summary,
     })
+
+
+# --------------------------------------------------
+# BREATHING BREAK: PAUSE / RESUME A PHYSICAL SESSION
+# --------------------------------------------------
+
+@app.route("/api/session/pause", methods=["POST"])
+@login_required("patient")
+def api_session_pause():
+    body = request.get_json(silent=True) or {}
+    with lock:
+        if not tracking["running"] or analyzer is None:
+            return jsonify({"success": False, "error": "No exercise is running."}), 400
+        if not tracking["paused"]:
+            tracking["paused"] = True
+            session_breaks.append({"trigger": str(body.get("trigger", "manual"))[:20],
+                                   "reason": (tracking["fatigue_alert"] or {}).get("reason"),
+                                   "started_at": time.strftime("%Y-%m-%dT%H:%M:%S")})
+        tracking["fatigue_alert"] = None
+    return jsonify({"success": True})
+
+
+@app.route("/api/session/resume", methods=["POST"])
+@login_required("patient")
+def api_session_resume():
+    body = request.get_json(silent=True) or {}
+    with lock:
+        if analyzer is None:
+            return jsonify({"success": False, "error": "No exercise is running."}), 400
+        if tracking["paused"] and session_breaks:
+            session_breaks[-1]["completed"] = bool(body.get("completed", True))
+            session_breaks[-1]["seconds"] = body.get("seconds")
+        tracking["paused"] = False
+    return jsonify({"success": True})
+
+
+# --------------------------------------------------
+# DUAL-TASK MODE (hold a posture + answer questions)
+# --------------------------------------------------
+
+@app.route("/api/dual/start", methods=["POST"])
+@login_required("patient")
+def api_dual_start():
+    global dual, dual_owner
+    body = request.get_json(silent=True) or {}
+    patient_id = current_user()["id"]
+    my_rx = patient_prescriptions(patient_id)
+    posture = body.get("posture", "curl_hold")
+    if posture not in POSTURES:
+        return jsonify({"success": False, "error": f"Unknown posture '{posture}'."}), 400
+    rx = dict(my_rx["curl"]) if posture == "curl_hold" else {}
+    side = body.get("side", rx.get("side", "auto"))
+    rx["side"] = side if side in ("auto", "left", "right") else "auto"
+    try:
+        session = DualTaskSession(
+            posture, rx, n_questions=int(body.get("questions", 6)),
+            baseline_sec=float(body.get("baseline_sec", 10)), question_sec=float(body.get("question_sec", 8)),
+            hold_ms=int(body.get("hold_ms", 1200)), level=int(body.get("level", 1)), mirrored=MIRROR)
+    except (ValueError, TypeError) as error:
+        return jsonify({"success": False, "error": str(error)}), 400
+
+    with lock:
+        if not tracking["camera_connected"]:
+            return jsonify({"success": False, "error": "Camera is not connected."}), 400
+        if tracking["running"]:
+            return jsonify({"success": False, "error": "Finish the current exercise first."}), 409
+        dual, dual_owner = session, patient_id
+        tracking["dual_active"] = True
+        state = dual.state()
+    return jsonify({"success": True, "state": state})
+
+
+@app.route("/api/dual/state")
+@login_required()
+def api_dual_state():
+    with lock:
+        return jsonify({"state": dual.state() if dual is not None else None})
+
+
+@app.route("/api/dual/answer", methods=["POST"])
+@login_required("patient")
+def api_dual_answer():
+    choice = (request.get_json(silent=True) or {}).get("choice")
+    if choice not in ("left", "right", 0, 1):
+        return jsonify({"success": False, "error": "choice must be 'left' or 'right'."}), 400
+    with lock:
+        ok = dual is not None and dual.answer(choice, via="click")
+        state = dual.state() if dual is not None else None
+    return jsonify({"success": bool(ok), "state": state})
+
+
+@app.route("/api/dual/stop", methods=["POST"])
+@login_required("patient")
+def api_dual_stop():
+    global dual, dual_owner
+    reason = (request.get_json(silent=True) or {}).get("reason", "manual")
+    with lock:
+        if dual is None:
+            return jsonify({"success": True, "summary": None})
+        summary = dual.finish(reason)
+        summary["saved_at"] = time.strftime("%Y-%m-%dT%H:%M:%S")
+        owner = dual_owner or current_user()["id"]
+        dual, dual_owner = None, None
+        tracking["dual_active"] = False
+
+    session_id = save_session_to_db(owner, summary)
+    os.makedirs(SESSION_DIR, exist_ok=True)
+    with open(os.path.join(SESSION_DIR, f"session_{time.strftime('%Y%m%d_%H%M%S')}_dual.json"), "w") as f:
+        json.dump(summary, f, indent=2)
+    return jsonify({"success": True, "session_id": session_id, "summary": summary})
 
 
 @app.route("/api/tracking")
