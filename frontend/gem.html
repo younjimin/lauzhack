@@ -1,0 +1,1286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GEM — Adaptive Rehabilitation Assistant</title>
+
+  <style>
+    :root {
+      --bg: #f4f7f6;
+      --card: #fff;
+      --ink: #19332f;
+      --muted: #71817d;
+      --line: #e1eae6;
+      --green: #167b69;
+      --soft: #e8f4ef;
+      --orange: #f4a261;
+      --red: #d9534f;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font: 15px/1.5 Inter, system-ui, Arial, sans-serif;
+    }
+
+    button, select {
+      font: inherit;
+      cursor: pointer;
+      border: 0;
+      border-radius: 9px;
+      padding: 10px 14px;
+      background: #edf3f0;
+      color: var(--ink);
+      font-weight: 650;
+    }
+
+    button.primary { background: var(--green); color: #fff; }
+    button.danger { background: var(--red); color: #fff; }
+    button:disabled { opacity: .5; cursor: not-allowed; }
+    button:hover:not(:disabled) { filter: brightness(.97); }
+
+    button:focus-visible, select:focus-visible, input:focus-visible {
+      outline: 3px solid var(--orange);
+      outline-offset: 2px;
+    }
+
+    .app {
+      display: grid;
+      grid-template-columns: 230px 1fr;
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      background: #fff;
+      border-right: 1px solid var(--line);
+      padding: 24px 16px;
+    }
+
+    .brand {
+      font-weight: 800;
+      font-size: 22px;
+      margin: 0 0 32px;
+      letter-spacing: 1px;
+    }
+
+    .brand span { color: var(--green); }
+
+    .nav-label {
+      font-size: 10px;
+      letter-spacing: 1.3px;
+      color: var(--muted);
+      font-weight: 800;
+      margin: 20px 10px 8px;
+    }
+
+    nav button {
+      display: block;
+      width: 100%;
+      text-align: left;
+      margin: 4px 0;
+      background: transparent;
+      color: var(--muted);
+    }
+
+    nav button.active {
+      background: var(--soft);
+      color: var(--green);
+    }
+
+    main {
+      padding: 30px;
+      max-width: 1400px;
+      width: 100%;
+      margin: auto;
+    }
+
+    .top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    h1 { font-size: 26px; margin: 3px 0 4px; }
+    h2 { font-size: 17px; margin: 0 0 12px; }
+    .muted { color: var(--muted); }
+
+    .eyebrow {
+      font-size: 11px;
+      letter-spacing: 1px;
+      color: var(--muted);
+      font-weight: 750;
+    }
+
+    .tag {
+      background: var(--soft);
+      color: var(--green);
+      padding: 6px 10px;
+      border-radius: 30px;
+      font-size: 11px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .page { display: none; }
+    .page.active { display: block; }
+
+    .hero {
+      background: #e8f4ef;
+      border-radius: 16px;
+      padding: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .hero h2 { font-size: 22px; margin: 5px 0; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+      margin: 16px 0;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 17px;
+      min-width: 0;
+    }
+
+    .metric-label {
+      font-size: 10px;
+      color: var(--muted);
+      font-weight: 750;
+      letter-spacing: .5px;
+    }
+
+    .metric {
+      font-size: 27px;
+      font-weight: 800;
+      margin: 7px 0 1px;
+    }
+
+    .two {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr;
+      gap: 14px;
+    }
+
+    .exercise {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 13px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .exercise:last-child { border: 0; }
+
+    .emoji {
+      width: 42px;
+      height: 42px;
+      background: #f0f5f2;
+      border-radius: 10px;
+      display: grid;
+      place-items: center;
+      font-size: 21px;
+      flex-shrink: 0;
+    }
+
+    .camera {
+      background: #172a2a;
+      aspect-ratio: 16 / 9;
+      max-height: 70vh;
+      margin: 12px auto;
+      border-radius: 12px;
+      overflow: hidden;
+      display: grid;
+      place-items: center;
+      color: #d9e8e2;
+      position: relative;
+    }
+
+    .camera img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: none;
+    }
+
+    .placeholder {
+      text-align: center;
+      padding: 20px;
+    }
+
+    .controls {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .feedback {
+      background: #f0f5f2;
+      border-radius: 10px;
+      padding: 13px;
+      margin-top: 12px;
+      font-size: 13px;
+    }
+
+    .feedback.warn {
+      background: #fbe3e1;
+      color: #8a2a26;
+    }
+
+    .gauge {
+      position: relative;
+      height: 20px;
+      border-radius: 10px;
+      overflow: hidden;
+      margin: 14px 0 4px;
+      display: flex;
+    }
+
+    .gauge .z1 { width: 50%; background: #f1b0ae; }
+    .gauge .z2 { width: 50%; background: #b7e0d2; }
+
+    #needle {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 4px;
+      background: var(--ink);
+      left: 100%;
+      transition: left .08s linear;
+    }
+
+    .gauge-scale {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .chart {
+      height: 150px;
+      display: flex;
+      align-items: end;
+      gap: 12px;
+      padding: 14px 8px 0;
+    }
+
+    .barcol {
+      flex: 1;
+      text-align: center;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: end;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .barcol i {
+      display: block;
+      width: min(30px, 70%);
+      background: #2b9a7c;
+      border-radius: 5px 5px 0 0;
+    }
+
+    .barcol small {
+      font-size: 10px;
+      color: var(--muted);
+    }
+
+    .patient {
+      display: grid;
+      grid-template-columns: 1.5fr 1fr .6fr .7fr;
+      padding: 12px 4px;
+      border-bottom: 1px solid var(--line);
+      font-size: 13px;
+      gap: 8px;
+    }
+
+    .patient.head {
+      font-size: 10px;
+      color: var(--muted);
+      font-weight: 800;
+    }
+
+    footer {
+      text-align: center;
+      color: var(--muted);
+      font-size: 11px;
+      padding: 30px;
+    }
+
+    body.reduce * { transition: none !important; }
+
+    @media (max-width: 800px) {
+      .app { grid-template-columns: 1fr; }
+      .sidebar {
+        padding: 12px;
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+      .brand { margin: 0 0 8px; }
+      .nav-label { display: none; }
+      nav { display: flex; overflow: auto; gap: 5px; }
+      nav button {
+        white-space: nowrap;
+        width: auto;
+        margin: 0;
+        padding: 9px;
+      }
+      main { padding: 17px; }
+      .grid { grid-template-columns: repeat(2, 1fr); }
+      .two { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 430px) {
+      .patient { grid-template-columns: 1.4fr .8fr .6fr; }
+      .patient > :last-child { display: none; }
+      h1 { font-size: 22px; }
+    }
+  </style>
+</head>
+
+<body>
+<div class="app">
+
+  <aside class="sidebar">
+    <div class="brand">✚ <span>GEM</span></div>
+
+    <div class="nav-label">WORKSPACE</div>
+    <nav>
+      <button class="active" data-page="overview">⌂ Patient overview</button>
+      <button data-page="session">◎ Exercise session</button>
+      <button data-page="progress">▥ My progress</button>
+      <button data-page="clinician">♧ Physiotherapist</button>
+    </nav>
+
+    <div class="nav-label">ACCOUNT</div>
+    <nav>
+      <button data-page="settings">⚙ Accessibility &amp; settings</button>
+    </nav>
+
+    <div class="feedback" style="margin-top:28px">
+      💚 Every movement is a step towards greater independence.
+    </div>
+  </aside>
+
+  <main>
+    <header class="top">
+      <div>
+        <div class="eyebrow" id="eyebrow">PATIENT WORKSPACE / OVERVIEW</div>
+        <h1 id="title">Your rehabilitation journey</h1>
+        <div class="muted" id="subtitle">One step at a time.</div>
+      </div>
+      <span class="tag">● Demo prototype</span>
+    </header>
+
+    <!-- OVERVIEW -->
+    <section class="page active" id="overview">
+      <div class="hero">
+        <div>
+          <div class="eyebrow">YOUR DAILY REHABILITATION PLAN</div>
+          <h2>You're making progress.</h2>
+          <div class="muted">Complete your prescribed exercises at your own pace.</div>
+        </div>
+        <button class="primary" data-go="session">Start exercise →</button>
+      </div>
+
+      <div class="grid">
+        <div class="card">
+          <div class="metric-label">SESSIONS SAVED</div>
+          <div class="metric" id="home-sessions">0</div>
+          <small class="muted">On this device</small>
+        </div>
+        <div class="card">
+          <div class="metric-label">TOTAL REPETITIONS</div>
+          <div class="metric" id="home-reps">0</div>
+          <small class="muted">Across all sessions</small>
+        </div>
+        <div class="card">
+          <div class="metric-label">MOVEMENT SCORE</div>
+          <div class="metric">85%</div>
+          <small class="muted">Demo score</small>
+        </div>
+        <div class="card">
+          <div class="metric-label">ACTIVE STREAK</div>
+          <div class="metric">3 days</div>
+          <small class="muted">Illustrative data</small>
+        </div>
+      </div>
+
+      <div class="two">
+        <div class="card">
+          <h2>Today's exercises</h2>
+          <div class="exercise">
+            <div class="emoji">💪</div>
+            <div style="flex:1">
+              <b>Right arm curl</b>
+              <div class="muted">10 repetitions · elbow 180° → 90°</div>
+            </div>
+            <span class="tag">Pending</span>
+          </div>
+          <div class="exercise">
+            <div class="emoji">🖐️</div>
+            <div style="flex:1">
+              <b>Finger tapping</b>
+              <div class="muted">20 taps · thumb to index finger</div>
+            </div>
+            <span class="tag">Pending</span>
+          </div>
+          <button class="primary" data-go="session">Begin session</button>
+        </div>
+
+        <div class="card">
+          <h2>Weekly consistency</h2>
+          <div class="muted">Completed activity · sample</div>
+          <div class="chart">
+            <div class="barcol"><i style="height:42%"></i><small>Mon</small></div>
+            <div class="barcol"><i style="height:68%"></i><small>Tue</small></div>
+            <div class="barcol"><i style="height:25%"></i><small>Wed</small></div>
+            <div class="barcol"><i style="height:85%"></i><small>Thu</small></div>
+            <div class="barcol"><i style="height:58%"></i><small>Fri</small></div>
+            <div class="barcol"><i style="height:15%"></i><small>Sat</small></div>
+            <div class="barcol"><i style="height:10%"></i><small>Sun</small></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="feedback">
+        💡 Follow the exercise instructions provided by your physiotherapist.
+        Stop if you experience pain, dizziness, or unusual discomfort.
+      </div>
+    </section>
+
+    <!-- EXERCISE SESSION -->
+    <section class="page" id="session">
+      <div class="card">
+        <div class="eyebrow">LIVE REHABILITATION</div>
+        <h2 style="margin-top:5px" id="ex-title">Right arm curl</h2>
+        <div class="muted" id="ex-help">
+          Stand or sit so your right arm and shoulder are visible.
+          Start with your arm straight (180°) and curl to 90°.
+          Do not go below 90°.
+        </div>
+
+        <div class="controls" style="margin-top:12px">
+          <select id="exercise" aria-label="Exercise">
+            <option value="curl">Right arm curl</option>
+            <option value="tap">Finger tapping</option>
+          </select>
+          <button class="primary" id="connect">Connect camera</button>
+          <button id="stop">Stop camera</button>
+        </div>
+
+        <div class="camera">
+          <img id="videoFeed" alt="Live Python pose tracking feed">
+          <div class="placeholder" id="placeholder">
+            <div style="font-size:38px">📷</div>
+            <b>Camera preview</b>
+            <div class="muted">Connect your camera to begin.</div>
+          </div>
+        </div>
+
+        <div class="gauge" aria-hidden="true">
+          <div class="z1"></div>
+          <div class="z2"></div>
+          <div id="needle"></div>
+        </div>
+
+        <div class="gauge-scale">
+          <span>0°</span>
+          <span>90° limit</span>
+          <span>180° open</span>
+        </div>
+
+        <div class="controls" style="margin-top:14px">
+          <button class="primary" id="start">▶ Start exercise</button>
+          <button id="finish">■ Stop &amp; save</button>
+          <button class="danger" id="pain">⚠ Pain — stop now</button>
+        </div>
+
+        <div class="feedback" id="camera-status" aria-live="polite">
+          Camera not connected.
+        </div>
+      </div>
+
+      <div class="grid">
+        <div class="card">
+          <div class="metric-label" id="angle-label">ELBOW ANGLE</div>
+          <div class="metric" id="angle">—°</div>
+          <small class="muted">Live from Python</small>
+        </div>
+        <div class="card">
+          <div class="metric-label">REPETITIONS</div>
+          <div class="metric" id="reps">0 / 10</div>
+          <small class="muted">Session target</small>
+        </div>
+        <div class="card">
+          <div class="metric-label">LOWEST ANGLE</div>
+          <div class="metric" id="minangle">—</div>
+          <small class="muted">Curl only</small>
+        </div>
+        <div class="card">
+          <div class="metric-label">SESSION TIME</div>
+          <div class="metric" id="duration">00:00</div>
+          <small class="muted">Elapsed time</small>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Movement feedback</h2>
+        <div id="feedback" aria-live="polite">
+          Connect your camera, choose an exercise and press Start.
+        </div>
+      </div>
+
+      <div class="feedback">
+        Prototype note: joint angles are estimated from a single webcam and are
+        approximate. They are not a clinical measurement.
+      </div>
+    </section>
+
+    <!-- PROGRESS -->
+    <section class="page" id="progress">
+      <div class="grid">
+        <div class="card">
+          <div class="metric-label">TOTAL SESSIONS</div>
+          <div class="metric" id="total-sessions">0</div>
+          <small class="muted">Saved on this device</small>
+        </div>
+        <div class="card">
+          <div class="metric-label">AVERAGE SCORE</div>
+          <div class="metric">85%</div>
+          <small class="muted">Illustrative</small>
+        </div>
+        <div class="card">
+          <div class="metric-label">LOWEST CURL ANGLE</div>
+          <div class="metric" id="best-angle">—</div>
+          <small class="muted">From saved sessions</small>
+        </div>
+        <div class="card">
+          <div class="metric-label">CONSISTENCY</div>
+          <div class="metric">80%</div>
+          <small class="muted">Illustrative</small>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Movement quality over time</h2>
+        <div class="muted">Illustrative weekly performance</div>
+        <div class="chart" style="height:190px">
+          <div class="barcol"><i style="height:38%"></i><small>W1</small></div>
+          <div class="barcol"><i style="height:48%"></i><small>W2</small></div>
+          <div class="barcol"><i style="height:56%"></i><small>W3</small></div>
+          <div class="barcol"><i style="height:52%"></i><small>W4</small></div>
+          <div class="barcol"><i style="height:68%"></i><small>W5</small></div>
+          <div class="barcol"><i style="height:78%"></i><small>W6</small></div>
+          <div class="barcol"><i style="height:85%"></i><small>W7</small></div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:14px">
+        <h2>Recent sessions</h2>
+        <div id="recent"></div>
+      </div>
+
+      <div class="controls" style="margin-top:14px">
+        <button id="report">↓ Export report</button>
+        <button id="clear">Clear saved sessions</button>
+      </div>
+    </section>
+
+    <!-- PHYSIOTHERAPIST -->
+    <section class="page" id="clinician">
+      <div class="hero">
+        <div>
+          <div class="eyebrow">CLINICIAN WORKSPACE</div>
+          <h2>Patient overview</h2>
+          <div class="muted">Review exercise adherence and patient progress.</div>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div class="card">
+          <div class="metric-label">PATIENTS</div>
+          <div class="metric">24</div>
+          <small class="muted">Demo accounts</small>
+        </div>
+        <div class="card">
+          <div class="metric-label">ACTIVE THIS WEEK</div>
+          <div class="metric">18</div>
+          <small class="muted">Sample activity</small>
+        </div>
+        <div class="card">
+          <div class="metric-label">SESSIONS</div>
+          <div class="metric">76</div>
+          <small class="muted">This week</small>
+        </div>
+        <div class="card">
+          <div class="metric-label">NEEDS REVIEW</div>
+          <div class="metric">3</div>
+          <small class="muted">Demo indicator</small>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Patient list</h2>
+        <div class="patient head">
+          <span>PATIENT</span><span>ACTIVITY</span><span>SCORE</span><span>STATUS</span>
+        </div>
+        <div class="patient">
+          <b>Alex Morgan</b><span>Today</span><b>85%</b><span class="tag">Active</span>
+        </div>
+        <div class="patient">
+          <b>Jamie Davis</b><span>Yesterday</span><b>78%</b><span class="tag">Review</span>
+        </div>
+        <div class="patient">
+          <b>Sam Kim</b><span>Today</span><b>91%</b><span class="tag">Active</span>
+        </div>
+        <div class="patient">
+          <b>Taylor Reed</b><span>3 days ago</span><b>69%</b><span class="tag">Review</span>
+        </div>
+      </div>
+
+      <div class="feedback">
+        All patients and metrics shown are fictional demo data. A production
+        dashboard needs authentication, role-based access and secure patient records.
+      </div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section class="page" id="settings">
+      <div class="card">
+        <h2>Accessibility &amp; preferences</h2>
+
+        <div class="exercise">
+          <div style="flex:1">
+            <b>Large text</b>
+            <div class="muted">Improve readability</div>
+          </div>
+          <input type="checkbox" id="large">
+        </div>
+
+        <div class="exercise">
+          <div style="flex:1">
+            <b>Audio feedback</b>
+            <div class="muted">Speak feedback messages aloud</div>
+          </div>
+          <input type="checkbox" id="audio">
+        </div>
+
+        <div class="exercise">
+          <div style="flex:1">
+            <b>Reduced motion</b>
+            <div class="muted">Prefer simpler visual transitions</div>
+          </div>
+          <input type="checkbox" id="reduce">
+        </div>
+      </div>
+
+      <div class="feedback">
+        Patient data privacy, consent, secure storage and access controls must be
+        implemented before collecting real patient information.
+      </div>
+    </section>
+
+    <footer>GEM · Adaptive Rehabilitation Assistant · Concept prototype</footer>
+  </main>
+</div>
+
+<script>
+  const $ = id => document.getElementById(id);
+
+  // --------------------------------------------------
+  // NAVIGATION
+  // --------------------------------------------------
+
+  const pages = {
+    overview: [
+      'PATIENT WORKSPACE / OVERVIEW',
+      'Your rehabilitation journey',
+      'One step at a time.'
+    ],
+    session: [
+      'PATIENT WORKSPACE / LIVE SESSION',
+      'Exercise session',
+      'Follow your prescribed rehabilitation routine.'
+    ],
+    progress: [
+      'PATIENT WORKSPACE / HISTORY',
+      'Your progress',
+      'Review your activity and movement trends.'
+    ],
+    clinician: [
+      'CLINICIAN WORKSPACE',
+      'Physiotherapist dashboard',
+      'Monitor rehabilitation activity and patient progress.'
+    ],
+    settings: [
+      'ACCOUNT / ACCESSIBILITY',
+      'Settings',
+      'Adjust your accessibility preferences.'
+    ]
+  };
+
+  function showPage(id) {
+    document.querySelectorAll('.page').forEach(page => {
+      page.classList.toggle('active', page.id === id);
+    });
+
+    document.querySelectorAll('[data-page]').forEach(button => {
+      button.classList.toggle('active', button.dataset.page === id);
+    });
+
+    $('eyebrow').textContent = pages[id][0];
+    $('title').textContent = pages[id][1];
+    $('subtitle').textContent = pages[id][2];
+
+    if (id === 'progress' || id === 'overview') renderHistory();
+  }
+
+  document.querySelectorAll('[data-page]').forEach(button => {
+    button.addEventListener('click', () => showPage(button.dataset.page));
+  });
+
+  document.querySelectorAll('[data-go]').forEach(button => {
+    button.addEventListener('click', () => showPage(button.dataset.go));
+  });
+
+  // --------------------------------------------------
+  // STATE
+  // --------------------------------------------------
+
+  const NAMES = {
+    curl: 'Right arm curl',
+    tap: 'Finger tapping'
+  };
+
+  let exercise = 'curl';
+  let target = 10;
+  let count = 0;
+  let running = false;
+  let cameraConnected = false;
+  let sessionStartedAt = 0;
+  let pollingTimer = null;
+  let durationTimer = null;
+  let lastMessage = '';
+  let finishing = false;
+
+  // --------------------------------------------------
+  // GENERAL HELPERS
+  // --------------------------------------------------
+
+  function status(message) {
+    $('camera-status').textContent = message;
+  }
+
+  function say(message, warning = false) {
+    $('feedback').textContent = message;
+    $('feedback').classList.toggle('warn', warning);
+
+    if (
+      message !== lastMessage &&
+      $('audio').checked &&
+      window.speechSynthesis
+    ) {
+      speechSynthesis.cancel();
+      speechSynthesis.speak(new SpeechSynthesisUtterance(message));
+    }
+
+    lastMessage = message;
+  }
+
+  function setAngle(value) {
+    if (value === null || value === undefined || Number.isNaN(Number(value))) {
+      $('angle').textContent = '—°';
+      return;
+    }
+
+    const angle = Number(value);
+    $('angle').textContent = Math.round(angle) + '°';
+
+    const percentage = Math.max(0, Math.min(100, angle / 180 * 100));
+    $('needle').style.left = `calc(${percentage}% - 2px)`;
+  }
+
+  function setReps(value) {
+    if (value !== undefined && value !== null) {
+      count = Number(value);
+    }
+
+    $('reps').textContent = `${count} / ${target}`;
+  }
+
+  function formatTime(seconds) {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return String(mins).padStart(2, '0') + ':' +
+           String(secs).padStart(2, '0');
+  }
+
+  async function api(url, options = {}) {
+    const response = await fetch(url, {
+      headers: { 'Content-Type': 'application/json' },
+      ...options
+    });
+
+    let data = {};
+    try {
+      data = await response.json();
+    } catch (_) {}
+
+    if (!response.ok) {
+      throw new Error(data.error || data.message || `Server error (${response.status})`);
+    }
+
+    return data;
+  }
+
+  // --------------------------------------------------
+  // EXERCISE UI
+  // --------------------------------------------------
+
+  function applyExerciseUI() {
+    exercise = $('exercise').value;
+    target = exercise === 'curl' ? 10 : 20;
+
+    $('ex-title').textContent = NAMES[exercise];
+
+    $('angle-label').textContent =
+      exercise === 'curl' ? 'ELBOW ANGLE' : 'FINGER OPENING';
+
+    $('ex-help').textContent = exercise === 'curl'
+      ? 'Stand or sit so your right arm and shoulder are visible. Start with your arm straight (180°) and curl to 90°. Do not go below 90°.'
+      : 'Hold your hand up to the camera. Touch your thumb to your index finger, then open again.';
+
+    $('minangle').textContent = '—';
+    setReps(0);
+    setAngle(null);
+  }
+
+  $('exercise').addEventListener('change', () => {
+    if (running) {
+      say('Stop the current exercise before changing exercises.', true);
+      $('exercise').value = exercise;
+      return;
+    }
+
+    applyExerciseUI();
+  });
+
+  // --------------------------------------------------
+  // CAMERA: PYTHON BACKEND
+  // --------------------------------------------------
+
+  $('connect').addEventListener('click', async () => {
+    if (cameraConnected) {
+      status('Camera is already connected.');
+      return;
+    }
+
+    $('connect').disabled = true;
+    status('Connecting to Python camera...');
+
+    try {
+      await api('/api/camera/start', { method: 'POST' });
+
+      cameraConnected = true;
+
+      $('videoFeed').src = '/video_feed?time=' + Date.now();
+      $('videoFeed').style.display = 'block';
+      $('placeholder').style.display = 'none';
+
+      status('Camera connected. Choose an exercise and press Start.');
+      say('Camera connected. You are ready to begin.');
+
+    } catch (error) {
+      status('Could not connect camera: ' + error.message);
+      say('Could not connect to the camera. Check that the Python server is running.', true);
+    } finally {
+      $('connect').disabled = false;
+    }
+  });
+
+  async function stopCamera() {
+    if (running) {
+      await finishSession('manual');
+    }
+
+    try {
+      await api('/api/camera/stop', { method: 'POST' });
+    } catch (error) {
+      console.error('Camera stop error:', error);
+    }
+
+    cameraConnected = false;
+
+    $('videoFeed').src = '';
+    $('videoFeed').style.display = 'none';
+    $('placeholder').style.display = 'block';
+
+    status('Camera stopped.');
+  }
+
+  $('stop').addEventListener('click', stopCamera);
+
+  // --------------------------------------------------
+  // START SESSION
+  // --------------------------------------------------
+
+  $('start').addEventListener('click', async () => {
+    if (running) return;
+
+    if (!cameraConnected) {
+      say('Connect the camera first.', true);
+      return;
+    }
+
+    exercise = $('exercise').value;
+    applyExerciseUI();
+
+    $('start').disabled = true;
+
+    try {
+      const result = await api('/api/session/start', {
+        method: 'POST',
+        body: JSON.stringify({ exercise })
+      });
+
+      count = Number(result.reps ?? 0);
+      setReps(count);
+
+      running = true;
+      finishing = false;
+      sessionStartedAt = Date.now();
+
+      $('minangle').textContent = '—';
+      $('duration').textContent = '00:00';
+
+      say(
+        exercise === 'curl'
+          ? 'Start with your arm straight, then curl up to 90°.'
+          : 'Start tapping your thumb and index finger.'
+      );
+
+      status('Exercise running...');
+
+      // Ask Python for the latest tracking result four times per second.
+      pollingTimer = setInterval(updateTracking, 250);
+
+      // Update the session clock once per second.
+      durationTimer = setInterval(updateDuration, 1000);
+
+      updateTracking();
+
+    } catch (error) {
+      say('Could not start exercise: ' + error.message, true);
+      status('Could not start exercise.');
+    } finally {
+      $('start').disabled = false;
+    }
+  });
+
+  // --------------------------------------------------
+  // GET LIVE TRACKING DATA FROM PYTHON
+  // --------------------------------------------------
+
+  async function updateTracking() {
+    if (!running) return;
+
+    try {
+      const data = await api('/api/tracking');
+
+      if (data.pose_detected === false) {
+        say(
+          exercise === 'curl'
+            ? 'Step back so your right arm is visible.'
+            : 'Show your hand clearly to the camera.'
+        );
+      } else if (data.feedback) {
+        say(data.feedback);
+      }
+
+      if (data.angle !== undefined && data.angle !== null) {
+        setAngle(data.angle);
+      }
+
+      if (data.reps !== undefined && data.reps !== null) {
+        setReps(data.reps);
+      }
+
+      if (data.min_angle !== undefined && data.min_angle !== null) {
+        $('minangle').textContent = Math.round(data.min_angle) + '°';
+      }
+
+      if (data.feedback) {
+        status(data.feedback);
+      }
+
+      if (count >= target) {
+        await finishSession('completed');
+      }
+
+    } catch (error) {
+      console.error('Tracking update failed:', error);
+      status('Lost connection to the Python tracking server.');
+    }
+  }
+
+  function updateDuration() {
+    if (!running) return;
+
+    const seconds = Math.floor((Date.now() - sessionStartedAt) / 1000);
+    $('duration').textContent = formatTime(seconds);
+  }
+
+  // --------------------------------------------------
+  // FINISH / PAIN / SAVE SESSION
+  // --------------------------------------------------
+
+  async function finishSession(reason) {
+    if (!running || finishing) return;
+
+    finishing = true;
+    running = false;
+
+    clearInterval(pollingTimer);
+    clearInterval(durationTimer);
+
+    pollingTimer = null;
+    durationTimer = null;
+
+    const elapsedSeconds = Math.round((Date.now() - sessionStartedAt) / 1000);
+
+    let result = {};
+
+    try {
+      result = await api('/api/session/stop', {
+        method: 'POST',
+        body: JSON.stringify({ reason })   // 'pain' is recorded in the saved session
+      });
+    } catch (error) {
+      console.error('Could not stop backend session:', error);
+    }
+
+    if (result.reps !== undefined && result.reps !== null) {
+      count = Number(result.reps);
+    }
+
+    setReps(count);
+
+    const lowestAngle =
+      result.min_angle !== undefined && result.min_angle !== null
+        ? Math.round(result.min_angle)
+        : null;
+
+    if (lowestAngle !== null && exercise === 'curl') {
+      $('minangle').textContent = lowestAngle + '°';
+    }
+
+    const session = {
+      date: new Date().toISOString(),
+      exercise,
+      reps: count,
+      target,
+      seconds: elapsedSeconds,
+      minAngle: exercise === 'curl' ? lowestAngle : null,
+      endedBy: reason
+    };
+
+    saveSession(session);
+
+    if (reason === 'pain') {
+      say('Exercise stopped because of pain. Rest, and tell your physiotherapist.', true);
+      status('Stopped: pain reported.');
+    } else if (reason === 'completed') {
+      say('Target reached. Well done!');
+      status('Target reached. Well done!');
+    } else {
+      say(`Session saved: ${count} reps in ${elapsedSeconds} seconds.`);
+      status('Session stopped and saved.');
+    }
+
+    finishing = false;
+  }
+
+  $('finish').addEventListener('click', () => finishSession('manual'));
+  $('pain').addEventListener('click', () => finishSession('pain'));
+
+  // --------------------------------------------------
+  // LOCAL SESSION STORAGE
+  // --------------------------------------------------
+
+  function loadSessions() {
+    try {
+      return JSON.parse(localStorage.getItem('gem_sessions') || '[]');
+    } catch {
+      return [];
+    }
+  }
+
+  function saveSession(session) {
+    try {
+      const sessions = loadSessions();
+      sessions.push(session);
+      localStorage.setItem('gem_sessions', JSON.stringify(sessions));
+    } catch (error) {
+      console.error('Could not save session:', error);
+    }
+
+    renderHistory();
+  }
+
+  function renderHistory() {
+    const sessions = loadSessions();
+
+    $('home-sessions').textContent = sessions.length;
+    $('total-sessions').textContent = sessions.length;
+
+    $('home-reps').textContent = sessions.reduce(
+      (total, session) => total + Number(session.reps || 0),
+      0
+    );
+
+    const angles = sessions
+      .filter(session => session.exercise === 'curl' && session.minAngle != null)
+      .map(session => Number(session.minAngle));
+
+    $('best-angle').textContent =
+      angles.length ? Math.min(...angles) + '°' : '—';
+
+    const recent = $('recent');
+    recent.innerHTML = '';
+
+    if (!sessions.length) {
+      const empty = document.createElement('div');
+      empty.className = 'muted';
+      empty.textContent = 'No sessions yet. Finish an exercise to see it here.';
+      recent.appendChild(empty);
+      return;
+    }
+
+    sessions.slice(-5).reverse().forEach(session => {
+      const item = document.createElement('div');
+      item.className = 'exercise';
+
+      const icon = session.exercise === 'curl' ? '💪 ' : '🖐️ ';
+      const name = NAMES[session.exercise] || session.exercise;
+      const date = new Date(session.date).toLocaleString();
+
+      const description = document.createElement('div');
+      description.style.flex = '1';
+      description.textContent =
+        `${icon}${name} · ${date} · ${session.reps}/${session.target} reps`;
+
+      const tag = document.createElement('span');
+      tag.className = 'tag';
+      tag.textContent = {
+        completed: 'Completed',
+        manual: 'Stopped',
+        pain: 'Pain stop'
+      }[session.endedBy] || 'Saved';
+
+      item.appendChild(description);
+      item.appendChild(tag);
+      recent.appendChild(item);
+    });
+  }
+
+  // --------------------------------------------------
+  // EXPORT AND CLEAR HISTORY
+  // --------------------------------------------------
+
+  $('clear').addEventListener('click', () => {
+    if (!confirm('Are you sure you want to clear all saved sessions?')) return;
+
+    localStorage.removeItem('gem_sessions');
+    renderHistory();
+  });
+
+  $('report').addEventListener('click', () => {
+    const sessions = loadSessions();
+
+    const lines = sessions.map(session => {
+      const name = NAMES[session.exercise] || session.exercise;
+
+      return [
+        session.date,
+        name,
+        `${session.reps}/${session.target} reps`,
+        `${session.seconds}s`,
+        `lowest angle: ${session.minAngle ?? 'n/a'}`,
+        `ended by: ${session.endedBy}`
+      ].join(' | ');
+    });
+
+    const report = [
+      'GEM — Progress Report',
+      '',
+      'Prototype data, not clinical measurements.',
+      `Sessions: ${sessions.length}`,
+      '',
+      lines.join('\n') || 'No sessions saved yet.'
+    ].join('\n');
+
+    const blob = new Blob([report], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+
+    link.href = url;
+    link.download = 'gem-progress.txt';
+    link.click();
+
+    URL.revokeObjectURL(url);
+  });
+
+  // --------------------------------------------------
+  // ACCESSIBILITY SETTINGS
+  // --------------------------------------------------
+
+  $('large').addEventListener('change', event => {
+    document.body.style.fontSize = event.target.checked ? '18px' : '15px';
+  });
+
+  $('reduce').addEventListener('change', event => {
+    document.body.classList.toggle('reduce', event.target.checked);
+  });
+
+  $('audio').addEventListener('change', event => {
+    if (!event.target.checked && window.speechSynthesis) {
+      speechSynthesis.cancel();
+    }
+  });
+
+  // --------------------------------------------------
+  // INITIALISE
+  // --------------------------------------------------
+
+  applyExerciseUI();
+  renderHistory();
+
+  // Ensure the camera is stopped if the page is closed.
+  window.addEventListener('beforeunload', () => {
+    if (pollingTimer) clearInterval(pollingTimer);
+    if (durationTimer) clearInterval(durationTimer);
+  });
+</script>
+</body>
+</html>
