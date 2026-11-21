@@ -130,7 +130,8 @@ def process_tracking(data, t_ms, width, height):
 
 def draw_overlay(img, r, reps, pose_detected, num_hands):
     h, w = img.shape[:2]
-    cv2.putText(img, f"Detected: {'Yes' if pose_detected else 'No'} | Hands: {num_hands} | Reps: {reps}", (20, 35),
+    tracked = f" | Tracking: {r['side'].upper()}" if r is not None and r.get("side") else ""
+    cv2.putText(img, f"Detected: {'Yes' if pose_detected else 'No'} | Hands: {num_hands} | Reps: {reps}{tracked}", (20, 35),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
 
     if r is not None:
@@ -215,7 +216,7 @@ def camera_worker():
             data = detector.process_frame(frame, timestamp_ms)
             r = process_tracking(data, timestamp_ms, width, height)
 
-            annotated = detector.draw_skeleton(frame, data, vis_threshold=0.5)
+            annotated = detector.draw_skeleton(frame, data, vis_threshold=0.5, show_hand_labels=False)
             with lock:
                 reps, pose_detected, num_hands = tracking["reps"], tracking["pose_detected"], tracking["hands"]
             draw_overlay(annotated, r, reps, pose_detected, num_hands)

@@ -245,6 +245,7 @@ class RehabAnalyzer:
         start = self.lo + o["start_fraction"] * self.range
         self.th = {"start": start, "end": start - o["hysteresis_deg"], "reach": self.tg - o["target_tolerance_deg"]}
         self.smoother = Smoother(o["smoothing_alpha"])
+        self._frame_size = (1, 1)
         self.reset()
 
     def _internal(self, v):
@@ -282,6 +283,7 @@ class RehabAnalyzer:
             hidden_since=None, hidden=False, first_t=None, last_t=None, active_ms=0.0,
             pain=False, pain_at=None, stopped=False, set_complete=False, flash=None,
             msg={"key": None, "text": "", "prio": -1, "since": -math.inf}, log=[],
+            hand_votes={"left": 0, "right": 0},
         )
 
     # ---- measuring ----
@@ -295,11 +297,59 @@ class RehabAnalyzer:
             side = "left" if side == "right" else "right"
         return side.capitalize()
 
+    def _hands_by_side(self, data, width, height):
+        """{'left'|'right': hand} using the patient's REAL sides.
+
+        MediaPipe's hand label ("Left"/"Right") is guessed from how the hand looks, so it is
+        often wrong when the back of the hand faces the camera or the hand is small, and it
+        can flicker from frame to frame. When the body is in view we instead match each
+        hand's wrist to the nearest wrist of the pose skeleton, whose sides are reliable.
+        """
+        hands = data.get("hands") or {}
+        if not hands:
+            return {}, False
+        thr = self.o["visibility_threshold"]
+        pose_wrists = {}
+        for side in ("left", "right"):
+            p = _point(data.get("pose"), f"{self._pose_label(side)}_wrist", width, height)
+            if p is not None and p[2] >= thr:
+                pose_wrists[side] = p
+
+        out, by_pose = {}, False
+        for label, hand in hands.items():
+            side = None
+            w = _point(hand, "wrist", width, height)
+            if w is not None and len(pose_wrists) == 2:
+                d = {sd: math.hypot(w[0] - p[0], w[1] - p[1]) for sd, p in pose_wrists.items()}
+                near, far = sorted(d, key=d.get)
+                if d[near] < 0.6 * d[far]:          # clearly closer to one wrist
+                    side, by_pose = near, True
+            if side is None:                         # body not in view: fall back to the label
+                side = "right" if label == self._hand_label("right") else "left"
+            out.setdefault(side, hand)
+        return out, by_pose
+
+    def _get_hand(self, data, width, height):
+        """The hand to measure for this session (None if it is not in view)."""
+        hands, by_pose = self._hands_by_side(data, width, height)
+        if self.rx["side"] == "auto" and len(hands) == 1:
+            # Auto mode: the reported side follows what is seen most often, so a few
+            # mislabelled frames at the start do not decide it for the whole session.
+            votes = self.s["hand_votes"]
+            votes[next(iter(hands))] += 1
+            self.s["side"] = max(votes, key=votes.get) if votes["left"] != votes["right"] else self.s["side"]
+        hand = hands.get(self.s["side"])
+        if hand is None and not by_pose and len(hands) == 1:
+            # Only one hand in view and no body to check against: its label probably just
+            # flipped (back of the hand, low confidence) — keep tracking it.
+            hand = next(iter(hands.values()))
+        return hand
+
     def _pick_side(self, data):
         if self.ex["source"] in ("hand", "hand_sequence"):
-            hands = data.get("hands") or {}
+            hands, _ = self._hands_by_side(data, *self._frame_size)
             for side in ("right", "left"):
-                if self._hand_label(side) in hands:
+                if side in hands:
                     return side
             return None
         pose = data.get("pose")
@@ -321,7 +371,7 @@ class RehabAnalyzer:
     def _measure(self, data, width, height):
         thr = self.o["visibility_threshold"]
         if self.ex["source"] == "hand":
-            hand = (data.get("hands") or {}).get(self._hand_label(self.s["side"]))
+            hand = self._get_hand(data, width, height)
             if not hand:
                 return None, False
             pts = [_point(hand, n, width, height) for n in ("thumb_tip", "index_finger_tip", "wrist", "middle_finger_mcp")]
@@ -340,7 +390,7 @@ class RehabAnalyzer:
 
     def _measure_all_fingers(self, data, width, height):
         thr = self.o["visibility_threshold"]
-        hand = (data.get("hands") or {}).get(self._hand_label(self.s["side"]))
+        hand = self._get_hand(data, width, height)
         if not hand:
             return None, False
 
@@ -633,6 +683,7 @@ class RehabAnalyzer:
         if not (isinstance(data, dict) and ("pose" in data or "hands" in data)):
             data = {"pose": data, "hands": {}}
 
+        self._frame_size = (width, height)
         if self.ex["source"] == "hand_sequence":
             return self._update_finger_sequence(data, t, width, height)
 

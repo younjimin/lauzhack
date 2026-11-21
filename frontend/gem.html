@@ -629,6 +629,10 @@
             <button class="primary" id="connect">📷 Connect camera</button>
             <button id="stop" disabled>⏹ Disconnect</button>
           </div>
+
+          <div class="toolbar-group">
+            <button id="voice-toggle" aria-pressed="true" title="Read feedback and corrections aloud">🔊 Voice on</button>
+          </div>
         </div>
 
         <!-- Step-by-step strip for Arm Curl right above camera -->
@@ -882,7 +886,7 @@
             <b>Audio feedback</b>
             <div class="muted">Speak feedback messages aloud</div>
           </div>
-          <input type="checkbox" id="audio">
+          <input type="checkbox" id="audio" checked>
         </div>
 
         <div class="exercise">
@@ -1074,19 +1078,95 @@
     $('camera-status').textContent = message;
   }
 
-  function say(message, warning = false) {
-    $('feedback').textContent = message;
-    $('feedback').classList.toggle('warn', warning);
+  // --------------------------------------------------
+  // VOICE FEEDBACK
+  // level 'alert'   : mistakes and safety (wrong finger, missed touch, bent too far, pain)
+  //                   → spoken at once, never cut off, repeated every few seconds while it lasts
+  // level 'caution' : partial rep, body/hand not visible → spoken without interrupting an alert
+  // level 'info'    : normal coaching → spoken when nothing more important is being said
+  // --------------------------------------------------
 
-    if (
-      message !== lastMessage &&
-      $('audio').checked &&
-      window.speechSynthesis
-    ) {
+  const VOICE_REPEAT_MS = 4000;   // repeat an ongoing mistake every 4 s
+  const VOICE_INFO_GAP_MS = 600;  // minimum gap between normal coaching messages
+
+  const voice = {
+    lastKey: '',
+    lastAt: 0,
+    alertKey: '',
+    alertAt: 0,
+    alertSpeaking: false
+  };
+
+  function voiceEnabled() {
+    return $('audio').checked && 'speechSynthesis' in window;
+  }
+
+  // "Touch thumb to RING finger (3/10)" and "(4/10)" count as the same message
+  function voiceKey(text) {
+    return String(text).replace(/\(\s*\d+\s*\/\s*\d+\s*\)/g, '').trim().toLowerCase();
+  }
+
+  function utter(text, isAlert) {
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'en-US';
+    u.rate = isAlert ? 1.0 : 0.95;
+    if (isAlert) {
+      voice.alertSpeaking = true;
+      u.onend = u.onerror = () => { voice.alertSpeaking = false; };
+    }
+    speechSynthesis.speak(u);
+  }
+
+  function speak(text, level = 'info') {
+    if (!voiceEnabled() || !text) return;
+    const now = Date.now();
+    const key = voiceKey(text);
+
+    if (level === 'alert') {
+      const same = key === voice.alertKey;
+      if (same && now - voice.alertAt < VOICE_REPEAT_MS) return;   // still sounding / repeat later
+      if (same && voice.alertSpeaking) return;
       speechSynthesis.cancel();
-      speechSynthesis.speak(new SpeechSynthesisUtterance(message));
+      utter(text, true);
+      voice.alertKey = key;
+      voice.alertAt = now;
+      voice.lastKey = key;
+      voice.lastAt = now;
+      return;
     }
 
+    if (key === voice.lastKey) return;                 // already said
+    if (voice.alertSpeaking) return;                   // never cut off a correction; retried on the next poll
+    if (level === 'info' && (speechSynthesis.speaking || now - voice.lastAt < VOICE_INFO_GAP_MS)) return;  // let the current sentence finish
+
+    voice.alertKey = '';                               // the mistake is over
+    speechSynthesis.cancel();
+    utter(text, false);
+    voice.lastKey = key;
+    voice.lastAt = now;
+  }
+
+  function resetVoice() {
+    voice.lastKey = voice.alertKey = '';
+    voice.lastAt = voice.alertAt = 0;
+    voice.alertSpeaking = false;
+    if ('speechSynthesis' in window) speechSynthesis.cancel();
+  }
+
+  function setVoiceUI(on) {
+    $('audio').checked = on;
+    const b = $('voice-toggle');
+    b.textContent = on ? '🔊 Voice on' : '🔇 Voice off';
+    b.setAttribute('aria-pressed', String(on));
+    try { localStorage.setItem('gem_voice', on ? '1' : '0'); } catch (_) {}
+    if (!on) resetVoice();
+  }
+
+  // level: 'alert' | 'caution' | 'info' (warning=true without a level counts as 'alert')
+  function say(message, warning = false, level = null) {
+    $('feedback').textContent = message;
+    $('feedback').classList.toggle('warn', warning);
+    speak(message, level || (warning ? 'alert' : 'info'));
     lastMessage = message;
   }
 
@@ -1290,6 +1370,7 @@
       running = true;
       finishing = false;
       sessionStartedAt = Date.now();
+      resetVoice();
 
       updateSessionControlsUI('running');
 
@@ -1337,10 +1418,15 @@
         say(
           exercise === 'tap'
             ? 'Show your open hand clearly to the camera.'
-            : 'Step back so your arm and shoulder are visible.'
+            : 'Step back so your arm and shoulder are visible.',
+          false,
+          'caution'
         );
       } else if (data.feedback) {
-        say(data.feedback, isBad);
+        const level = isBad
+          ? 'alert'
+          : (data.message_key === 'partial' || data.message_key === 'hidden' ? 'caution' : 'info');
+        say(data.feedback, isBad, level);
       }
 
       if (data.reps !== undefined && data.reps !== null) {
@@ -1727,16 +1813,18 @@
     document.body.classList.toggle('reduce', event.target.checked);
   });
 
-  $('audio').addEventListener('change', event => {
-    if (!event.target.checked && window.speechSynthesis) {
-      speechSynthesis.cancel();
-    }
+  $('audio').addEventListener('change', event => setVoiceUI(event.target.checked));
+  $('voice-toggle').addEventListener('click', () => {
+    const on = !$('audio').checked;
+    setVoiceUI(on);
+    if (on) speak('Voice feedback on.', 'info');
   });
 
   // --------------------------------------------------
   // INITIALISE
   // --------------------------------------------------
 
+  try { setVoiceUI(localStorage.getItem('gem_voice') !== '0'); } catch (_) { setVoiceUI(true); }
   applyExerciseUI();
   updateSessionControlsUI('idle');
   renderHistory();
