@@ -209,7 +209,6 @@ try:
     os.environ["GEM_DB"] = os.path.join(tmp, "test.db")
     os.environ["GEM_DEMO"] = "0"
     import main as app_module
-    app_module.SESSION_DIR = os.path.join(tmp, "sessions")
     patient, doctor = app_module.app.test_client(), app_module.app.test_client()
     pid = patient.post("/api/auth/register", json={"role": "patient", "name": "Pat", "email": "p@t.org",
                                                     "password": "secret123"}).get_json()["user"]["id"]
@@ -262,6 +261,18 @@ try:
           and stop["summary"]["breaks"][0]["trigger"] == "fatigue" and stop["summary"]["breaks"][0]["completed"]
           and seen["breaks"] == 1 and tr["shoulder_ratio"] is not None,
           f"alert={alert} reps frozen={paused_tr['reps']}=={reps_before} breaks={seen['breaks']} shoulder={tr['shoulder_ratio']}")
+    bad_game = patient.post("/api/cognitive/result", json={"game": "chess", "correct": 1, "total": 2}).status_code
+    bad_num = patient.post("/api/cognitive/result", json={"game": "logic", "correct": 9, "total": 5}).status_code
+    doc_post = doctor.post("/api/cognitive/result", json={"game": "logic", "correct": 1, "total": 2}).status_code
+    ok = patient.post("/api/cognitive/result", json={"game": "memory", "correct": 4, "total": 6, "seconds": 42,
+                                                     "avg_sec": 2.5, "input": "mouse"}).get_json()
+    seen = doctor.get(f"/api/doctor/patients/{pid}").get_json()["sessions"][0]
+    mine = patient.get("/api/patient/sessions").get_json()["sessions"][0]
+    check("6d. Thinking-game result is saved to the account and shown to the doctor; bad input rejected",
+          bad_game == 400 and bad_num == 400 and doc_post == 403 and ok["success"] and seen["exercise"] == "cognitive_memory"
+          and seen["reps"] == 4 and seen["target_reps"] == 6 and seen["accuracy_pct"] == 66.7 and seen["input"] == "mouse"
+          and mine["id"] == seen["id"],
+          f"bad={bad_game},{bad_num} doctor={doc_post} doctor sees={seen['exercise']} {seen['reps']}/{seen['target_reps']}")
     page = patient.get("/").get_data(as_text=True)
     js = patient.get("/rehab-modes.js").status_code
     check("6c. Patient page loads rehab-modes.js", "/rehab-modes.js" in page and js == 200, f"js={js}")

@@ -3,22 +3,26 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GEM — Adaptive Rehabilitation Assistant</title>
+  <title>ability+</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
 
   <style>
     :root {
+      /* ability+ palette: one brand colour (green); red only for pain and limits */
       --bg: #f4f7f6;
       --card: #fff;
       --ink: #19332f;
-      --muted: #71817d;
+      --muted: #5f6f6a;
       --line: #e1eae6;
       --green: #167b69;
       --green-dark: #115e50;
       --soft: #e8f4ef;
-      --orange: #e67e22;
-      --orange-soft: #fdf2e9;
-      --red: #d9534f;
-      --red-soft: #fbe3e1;
+      --orange: #F2A93B;
+      --orange-soft: #FFF1DC;
+      --red: #C2362F;
+      --red-soft: #FBEDEC;
     }
 
     * { box-sizing: border-box; }
@@ -27,7 +31,7 @@
       margin: 0;
       background: var(--bg);
       color: var(--ink);
-      font: 15px/1.5 Inter, system-ui, Arial, sans-serif;
+      font: 15px/1.5 "Atkinson Hyperlegible", system-ui, sans-serif;
     }
 
     button, select {
@@ -54,7 +58,7 @@
     }
 
     button.running-btn {
-      background: #0f5132;
+      background: #1F7A4D;
       color: #fff;
       box-shadow: 0 0 0 3px rgba(22, 123, 105, 0.25);
     }
@@ -91,13 +95,19 @@
     }
 
     .brand {
-      font-weight: 800;
+      font-weight: 700;
       font-size: 22px;
-      margin: 0 0 32px;
-      letter-spacing: 1px;
+      margin: 0 0 28px;
+      letter-spacing: -0.02em;
+      display: flex;
+      align-items: center;
+      gap: 3px;
     }
 
-    .brand span { color: var(--green); }
+    .brand .plus {
+      display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 5px;
+      background: var(--green); color: #fff; font-size: 17px; line-height: 1; transform: translateY(1px);
+    }
 
     .nav-label {
       font-size: 10px;
@@ -140,12 +150,7 @@
     h2 { font-size: 17px; margin: 0 0 12px; }
     .muted { color: var(--muted); }
 
-    .eyebrow {
-      font-size: 11px;
-      letter-spacing: 1px;
-      color: var(--muted);
-      font-weight: 750;
-    }
+    .eyebrow { display: none; }
 
     .tag {
       background: var(--soft);
@@ -161,10 +166,10 @@
     }
 
     .tag.idle { background: #edf3f0; color: var(--muted); }
-    .tag.running { background: #d1f2e6; color: #0f5132; }
+    .tag.running { background: #E5F3EC; color: #1F7A4D; }
     .tag.stopped { background: var(--orange-soft); color: #9c5211; }
     .tag.pain { background: var(--red-soft); color: #8a2a26; }
-    .tag.done { background: #d1f2e6; color: #0f5132; }
+    .tag.done { background: #E5F3EC; color: #1F7A4D; }
 
     .page { display: none; }
     .page.active { display: block; }
@@ -206,10 +211,8 @@
     }
 
     .metric-label {
-      font-size: 10px;
+      font-size: 14px;
       color: var(--muted);
-      font-weight: 750;
-      letter-spacing: .5px;
     }
 
     .metric {
@@ -237,7 +240,7 @@
     .emoji {
       width: 42px;
       height: 42px;
-      background: #f0f5f2;
+      background: #f4f7f6;
       border-radius: 10px;
       display: grid;
       place-items: center;
@@ -255,7 +258,7 @@
       overflow: hidden;
       display: grid;
       place-items: center;
-      color: #d9e8e2;
+      color: #e1eae6;
       position: relative;
       transition: border-color .2s ease, box-shadow .2s ease;
     }
@@ -266,7 +269,7 @@
     }
 
     .camera.state-bad {
-      border-color: #d9534f;
+      border-color: #C2362F;
       box-shadow: 0 0 0 4px rgba(217, 83, 79, 0.28);
     }
 
@@ -296,14 +299,14 @@
       gap: 8px;
       flex-wrap: wrap;
       align-items: center;
-      background: #f8fbfa;
+      background: #FFFFFF;
       border: 1px solid var(--line);
       padding: 8px 10px;
       border-radius: 12px;
     }
 
     .feedback {
-      background: #f0f5f2;
+      background: #f4f7f6;
       border-radius: 10px;
       padding: 13px;
       margin-top: 12px;
@@ -323,7 +326,7 @@
     }
 
     .summary-card {
-      background: #f8fcfa;
+      background: #FFFFFF;
       border: 2px solid var(--green);
       border-radius: 14px;
       padding: 20px;
@@ -362,11 +365,12 @@
       border-radius: 10px;
       overflow: hidden;
       margin: 14px 0 4px;
-      display: flex;
+      background: #e2ebe6;
     }
 
-    .gauge .z1 { width: 50%; background: #f1b0ae; }
-    .gauge .z2 { width: 50%; background: #b7e0d2; }
+    .gauge .seg { position: absolute; top: 0; bottom: 0; }
+    .gauge .seg.danger { background: #F0B4B0; }
+    .gauge .seg.goal { background: #b7e0d2; }
 
     #needle {
       position: absolute;
@@ -397,9 +401,8 @@
       border-radius: 999px;
       background: #edf3f0;
       color: var(--muted);
-      font-size: 12px;
+      font-size: 13px;
       font-weight: 700;
-      text-transform: uppercase;
     }
 
     .step-pill.active {
@@ -429,29 +432,19 @@
     .barcol i {
       display: block;
       width: min(30px, 70%);
-      background: #2b9a7c;
+      background: #167b69;
       border-radius: 5px 5px 0 0;
     }
 
     .barcol small {
-      font-size: 10px;
+      font-size: 11px;
       color: var(--muted);
+      white-space: nowrap;
     }
 
-    .patient {
-      display: grid;
-      grid-template-columns: 1.5fr 1fr .6fr .7fr;
-      padding: 12px 4px;
-      border-bottom: 1px solid var(--line);
-      font-size: 13px;
-      gap: 8px;
-    }
-
-    .patient.head {
-      font-size: 10px;
-      color: var(--muted);
-      font-weight: 800;
-    }
+    .barcol b { font-size: 11px; }
+    .barcol i.warn { background: var(--red); }
+    .empty { color: var(--muted); padding: 8px 0; }
 
     footer {
       text-align: center;
@@ -508,11 +501,11 @@
     .demo-art .shirt { fill: #2f80d0; }
     .demo-art .pants { stroke: #64625d; stroke-width: 18; stroke-linecap: round; }
     .demo-art .idle-arm { stroke: #b7b5af; stroke-width: 15; stroke-linecap: round; }
-    .demo-art .left-arm { fill: none; stroke: #1f8a64; stroke-width: 15; stroke-linecap: round; stroke-linejoin: round; }
+    .demo-art .left-arm { fill: none; stroke: #167b69; stroke-width: 15; stroke-linecap: round; stroke-linejoin: round; }
     .demo-art .right-arm { fill: none; stroke: #df5830; stroke-width: 15; stroke-linecap: round; stroke-linejoin: round; }
     .demo-art .guide { fill: none; stroke: #9fb0a9; stroke-width: 1.8; stroke-dasharray: 5 5; }
     .demo-art .angle-arc { fill: none; stroke: #485b55; stroke-width: 2; }
-    .demo-art .label-sm { font-size: 11px; font-weight: 700; fill: #4f625c; text-anchor: middle; }
+    .demo-art .label-sm { font-size: 11px; font-weight: 700; fill: #485b55; text-anchor: middle; }
     .demo-art .label-hd { font-size: 12px; font-weight: 800; fill: #19332f; }
 
     .demo-art .l-forearm-group {
@@ -629,7 +622,6 @@
         border-bottom: 1px solid var(--line);
       }
       .brand { margin: 0 0 8px; }
-      .nav-label { display: none; }
       nav { display: flex; overflow: auto; gap: 5px; }
       nav button {
         white-space: nowrap;
@@ -648,111 +640,79 @@
 <div class="app">
 
   <aside class="sidebar">
-    <div class="brand">✚ <span>GEM</span></div>
+    <div class="brand" aria-label="ability plus">ability<span class="plus" aria-hidden="true">+</span></div>
 
-    <div class="nav-label">WORKSPACE</div>
-    <nav>
-      <button class="active" data-page="overview">⌂ Patient overview</button>
-      <button data-page="session">◎ Exercise session</button>
-      <button data-page="progress">▥ My progress</button>
-      <button data-page="clinician">♧ Physiotherapist</button>
+    <nav aria-label="Main">
+      <button class="active" data-page="overview">🏠 Overview</button>
+      <button data-page="session">💪 Movement</button>
+      <button data-page="cognitive">🧠 Thinking</button>
+      <button data-page="dual">🤹 Both at once</button>
+      <button data-page="progress">📈 My progress</button>
     </nav>
 
-    <div class="nav-label">ACCOUNT</div>
-    <nav>
-      <button data-page="settings">⚙ Accessibility &amp; settings</button>
+    <nav style="margin-top:14px;padding-top:10px;border-top:1px solid var(--line)" aria-label="Account">
+      <button data-page="settings">⚙️ Settings</button>
     </nav>
-
-    <div class="feedback" style="margin-top:28px">
-      💚 Every movement is a step towards greater independence.
-    </div>
   </aside>
 
   <main>
     <header class="top">
       <div>
-        <div class="eyebrow" id="eyebrow">PATIENT WORKSPACE / OVERVIEW</div>
-        <h1 id="title">Your rehabilitation journey</h1>
-        <div class="muted" id="subtitle">One step at a time.</div>
+        <div class="eyebrow" id="eyebrow"></div>
+        <h1 id="title">Your plan</h1>
+        <div class="muted" id="subtitle">Set by your physiotherapist. Go at your own pace.</div>
       </div>
-      <span class="tag">● Demo prototype</span>
     </header>
 
     <!-- OVERVIEW -->
     <section class="page active" id="overview">
       <div class="hero">
         <div>
-          <div class="eyebrow">YOUR DAILY REHABILITATION PLAN</div>
-          <h2>You're making progress.</h2>
-          <div class="muted">Complete your prescribed exercises at your own pace.</div>
+          <h2 id="hero-title">Ready for today's exercises?</h2>
+          <div class="muted" id="hero-sub">Every session you finish is shared with your physiotherapist.</div>
         </div>
-        <button class="primary" data-go="session">Start exercise →</button>
+        <button class="primary" data-go="session">Start movement exercises</button>
       </div>
 
       <div class="grid">
         <div class="card">
-          <div class="metric-label">SESSIONS SAVED</div>
+          <div class="metric-label">Sessions</div>
           <div class="metric" id="home-sessions">0</div>
-          <small class="muted">On this device</small>
+          <small class="muted">All training types</small>
         </div>
         <div class="card">
-          <div class="metric-label">TOTAL REPETITIONS</div>
+          <div class="metric-label">Repetitions</div>
           <div class="metric" id="home-reps">0</div>
-          <small class="muted">Arm curls &amp; finger touches</small>
+          <small class="muted">Arm curls and finger touches</small>
         </div>
         <div class="card">
-          <div class="metric-label">COMPLETION RATE</div>
-          <div class="metric" id="home-completion">—</div>
-          <small class="muted" id="home-completion-sub">Target goals reached</small>
+          <div class="metric-label">Reached the target</div>
+          <div class="metric" id="home-completion">–</div>
+          <small class="muted" id="home-completion-sub">No sessions yet</small>
         </div>
         <div class="card">
-          <div class="metric-label">ACTIVE THERAPY TIME</div>
-          <div class="metric" id="home-active-time">0m 0s</div>
-          <small class="muted">Total tracked practice</small>
+          <div class="metric-label">Time spent training</div>
+          <div class="metric" id="home-active-time">0 min</div>
+          <small class="muted">All sessions</small>
         </div>
       </div>
 
       <div class="two">
         <div class="card">
-          <h2>Today's exercises</h2>
-          <div class="exercise">
-            <div class="emoji">💪</div>
-            <div style="flex:1">
-              <b>Arm curl (Left or Right)</b>
-              <div class="muted">5 repetitions · elbow 160° → 100°</div>
-            </div>
-            <span class="tag">Available</span>
-          </div>
-          <div class="exercise">
-            <div class="emoji">🖐️</div>
-            <div style="flex:1">
-              <b>Sequential finger opposition</b>
-              <div class="muted">10 touches · Index → Middle → Ring → Pinky &amp; back</div>
-            </div>
-            <span class="tag">Available</span>
-          </div>
-          <button class="primary" data-go="session">Begin session</button>
+          <h2>Your exercises</h2>
+          <div id="plan-list"></div>
+          <button class="primary" data-go="session" style="margin-top:12px">Begin</button>
         </div>
 
         <div class="card">
-          <h2>Weekly consistency</h2>
-          <div class="muted">Completed activity · sample</div>
-          <div class="chart">
-            <div class="barcol"><i style="height:42%"></i><small>Mon</small></div>
-            <div class="barcol"><i style="height:68%"></i><small>Tue</small></div>
-            <div class="barcol"><i style="height:25%"></i><small>Wed</small></div>
-            <div class="barcol"><i style="height:85%"></i><small>Thu</small></div>
-            <div class="barcol"><i style="height:58%"></i><small>Fri</small></div>
-            <div class="barcol"><i style="height:15%"></i><small>Sat</small></div>
-            <div class="barcol"><i style="height:10%"></i><small>Sun</small></div>
-          </div>
-
+          <h2>This week</h2>
+          <div class="muted">Sessions per day</div>
+          <div class="chart" id="week-chart"></div>
         </div>
       </div>
 
       <div class="feedback">
-        💡 Follow the exercise instructions provided by your physiotherapist.
-        Stop if you experience pain, dizziness, or unusual discomfort.
+        Stop if you feel pain, dizziness or unusual discomfort.
       </div>
     </section>
 
@@ -761,15 +721,10 @@
       <div class="card">
         <div class="session-header">
           <div>
-            <div class="eyebrow">LIVE REHABILITATION</div>
             <h2 style="margin-top:4px;margin-bottom:4px" id="ex-title">Arm curl</h2>
-            <div class="muted" id="ex-help">
-              Stand or sit so your arm and shoulder are visible.
-              Start with your arm straight (160°) and curl to 100°.
-              Do not bend past 85°.
-            </div>
+            <div class="muted" id="ex-help"></div>
           </div>
-          <span class="tag idle" id="session-badge">● IDLE — NOT STARTED</span>
+          <span class="tag idle" id="session-badge">Camera off</span>
         </div>
 
         <div class="controls" style="margin-top:14px">
@@ -779,33 +734,29 @@
               <option value="tap">Sequential finger opposition</option>
             </select>
             <select id="side" aria-label="Body side">
-              <option value="auto">Side: Auto-detect</option>
+              <option value="auto">Either side (detect)</option>
               <option value="left">Left side</option>
               <option value="right">Right side</option>
             </select>
           </div>
 
           <div class="toolbar-group">
-            <button class="primary" id="connect">📷 Connect camera</button>
-            <button id="stop" disabled>⏹ Disconnect</button>
+            <button class="primary" id="connect">Connect camera</button>
+            <button id="stop" disabled>Turn camera off</button>
           </div>
           <div class="toolbar-group">
-            <button id="voice-toggle" aria-pressed="true" title="Read feedback and corrections aloud">🔊 Voice on</button>
-          </div>
-
-          <!-- Animated movement guide button -->
-          <div class="toolbar-group">
-            <button id="demo-open" aria-haspopup="dialog">🎬 How to do it</button>
+            <button id="voice-toggle" aria-pressed="true" title="Read feedback and corrections aloud">Voice on</button>
+            <button id="demo-open" aria-haspopup="dialog">Show me how</button>
           </div>
         </div>
 
         <!-- Step-by-step strip for Arm Curl right above camera -->
         <div class="sequence-strip" id="curl-steps-strip">
-          <span class="step-pill" data-curl-step="REST">1. Arm Straight (160°)</span>
-          <span class="step-pill" data-curl-step="RAISING">2. Curl Up (100°)</span>
-          <span class="step-pill" data-curl-step="TOP">3. Hold Peak</span>
-          <span class="step-pill" data-curl-step="LOWER">4. Lower Slowly</span>
-          <span class="muted" style="align-self:center;font-size:12px">→ repeat 5 times</span>
+          <span class="step-pill" data-curl-step="REST" id="step-rest">1. Straight arm</span>
+          <span class="step-pill" data-curl-step="RAISING" id="step-bend">2. Bend</span>
+          <span class="step-pill" data-curl-step="TOP">3. Hold</span>
+          <span class="step-pill" data-curl-step="LOWER">4. Lower slowly</span>
+          <span class="muted" style="align-self:center;font-size:13px" id="curl-repeat"></span>
         </div>
 
         <!-- Step-by-step strip for Sequential Finger Opposition right above camera -->
@@ -813,37 +764,36 @@
           <span class="step-pill" data-finger="index">1. Index</span>
           <span class="step-pill" data-finger="middle">2. Middle</span>
           <span class="step-pill" data-finger="ring">3. Ring</span>
-          <span class="step-pill" data-finger="pinky">4. Pinky</span>
-          <span class="muted" style="align-self:center;font-size:12px">→ then reverse back (10 touches)</span>
+          <span class="step-pill" data-finger="pinky">4. Little finger</span>
+          <span class="muted" style="align-self:center;font-size:13px" id="finger-repeat"></span>
         </div>
 
         <div class="camera" id="camera-frame">
-          <img id="videoFeed" alt="Live Python pose tracking feed">
+          <img id="videoFeed" alt="Live camera with pose tracking">
           <div class="placeholder" id="placeholder">
-            <div style="font-size:38px">📷</div>
-            <b>Camera preview</b>
-            <div class="muted">Click "Connect camera" above to begin.</div>
+            <b>Camera off</b>
+            <div class="muted">Press "Connect camera" to begin. The video stays on this computer.</div>
           </div>
         </div>
 
-        <!-- Angle gauge ONLY shown for arm curl -->
+        <!-- Angle gauge, only for the arm curl. Zones come from the physiotherapist's prescription. -->
         <div id="arm-gauge-container">
           <div class="gauge" aria-hidden="true">
-            <div class="z1"></div>
-            <div class="z2"></div>
+            <div class="seg danger" id="g-danger"></div>
+            <div class="seg goal" id="g-goal"></div>
             <div id="needle"></div>
           </div>
           <div class="gauge-scale">
             <span>0°</span>
-            <span>90° limit</span>
+            <span id="g-label"></span>
             <span>180° straight</span>
           </div>
         </div>
 
         <div class="controls" style="margin-top:16px">
-          <button class="primary" id="start" disabled>▶ Start exercise</button>
-          <button id="finish" disabled>■ Stop &amp; save</button>
-          <button class="danger" id="pain" disabled>⚠ Pain — stop now</button>
+          <button class="primary" id="start" disabled>Start</button>
+          <button id="finish" disabled>Stop and save</button>
+          <button class="danger" id="pain" disabled>I feel pain, stop</button>
         </div>
 
         <div class="feedback" id="camera-status" aria-live="polite">
@@ -854,8 +804,7 @@
         <div class="summary-card" id="summary-card">
           <div class="session-header">
             <div>
-              <div class="eyebrow">POST-SESSION REPORT</div>
-              <h2 style="margin:4px 0 0" id="summary-title">Session Completed</h2>
+              <h2 style="margin:4px 0 0" id="summary-title">Session summary</h2>
             </div>
             <span class="tag" id="summary-status-tag">Saved</span>
           </div>
@@ -866,61 +815,60 @@
       <!-- Arm Curl Metric Cards (hidden for finger exercise) -->
       <div class="grid" id="arm-metrics-grid">
         <div class="card">
-          <div class="metric-label">ELBOW ANGLE</div>
+          <div class="metric-label">Elbow angle</div>
           <div class="metric" id="angle">—°</div>
           <small class="muted" id="side-detected">Side: auto</small>
         </div>
         <div class="card">
-          <div class="metric-label">REPETITIONS</div>
+          <div class="metric-label">Repetitions</div>
           <div class="metric" id="arm-reps">0 / 5</div>
           <small class="muted">Session target</small>
         </div>
         <div class="card">
-          <div class="metric-label">LOWEST ANGLE</div>
+          <div class="metric-label">Deepest bend</div>
           <div class="metric" id="minangle">—</div>
-          <small class="muted">Best curl bend</small>
+          <small class="muted">This session</small>
         </div>
         <div class="card">
-          <div class="metric-label">ELAPSED TIME</div>
+          <div class="metric-label">Time</div>
           <div class="metric" id="arm-duration">00:00</div>
-          <small class="muted">Session clock</small>
+          <small class="muted">Since you pressed Start</small>
         </div>
       </div>
 
       <!-- Finger Opposition Metric Cards (hidden for arm curl) -->
       <div class="grid" id="finger-metrics-grid" style="display:none">
         <div class="card">
-          <div class="metric-label">TOUCHES COMPLETED</div>
+          <div class="metric-label">Touches</div>
           <div class="metric" id="finger-reps">0 / 10</div>
-          <small class="muted">Forward &amp; backward</small>
+          <small class="muted">Forward and back</small>
         </div>
         <div class="card">
-          <div class="metric-label">MOVEMENT ACCURACY</div>
+          <div class="metric-label">Correct finger</div>
           <div class="metric" id="finger-accuracy">100%</div>
-          <small class="muted">Correct touches</small>
+          <small class="muted">Share of touches</small>
         </div>
         <div class="card">
-          <div class="metric-label">RHYTHM CONSISTENCY</div>
+          <div class="metric-label">Steady rhythm</div>
           <div class="metric" id="finger-consistency">—</div>
-          <small class="muted">Touch pacing steadiness</small>
+          <small class="muted">How even your pace is</small>
         </div>
         <div class="card">
-          <div class="metric-label">MISSED TOUCHES</div>
+          <div class="metric-label">Missed touches</div>
           <div class="metric" id="finger-missed">0</div>
-          <small class="muted">Wrong / incomplete</small>
+          <small class="muted">Wrong or incomplete</small>
         </div>
       </div>
 
       <div class="card">
-        <h2>Live coaching feedback</h2>
+        <h2>Feedback</h2>
         <div id="feedback" aria-live="polite">
           Connect your camera, choose an exercise and press Start.
         </div>
       </div>
 
       <div class="feedback">
-        Prototype note: joint angles and finger distances are estimated from a single webcam and are
-        approximate. They are not a clinical measurement.
+        Angles and finger distances are estimated from one webcam, so they are approximate.
       </div>
     </section>
 
@@ -928,107 +876,40 @@
     <section class="page" id="progress">
       <div class="grid">
         <div class="card">
-          <div class="metric-label">TOTAL SESSIONS</div>
+          <div class="metric-label">Sessions</div>
           <div class="metric" id="total-sessions">0</div>
-          <small class="muted">Saved on this device</small>
+          <small class="muted">Saved to your account</small>
         </div>
         <div class="card">
-          <div class="metric-label">AVG FINGER ACCURACY</div>
-          <div class="metric" id="avg-accuracy">—</div>
-          <small class="muted">Correct touches %</small>
+          <div class="metric-label">Correct finger</div>
+          <div class="metric" id="avg-accuracy">–</div>
+          <small class="muted">Average, finger exercise</small>
         </div>
         <div class="card">
-          <div class="metric-label">AVG TOUCH SPEED</div>
-          <div class="metric" id="avg-speed">—</div>
-          <small class="muted">Seconds per touch</small>
+          <div class="metric-label">Time per touch</div>
+          <div class="metric" id="avg-speed">–</div>
+          <small class="muted">Average, finger exercise</small>
         </div>
         <div class="card">
-          <div class="metric-label">MOST DIFFICULT FINGER</div>
-          <div class="metric" id="hardest-finger">—</div>
-          <small class="muted">Highest miss / slowest</small>
+          <div class="metric-label">Hardest finger</div>
+          <div class="metric" id="hardest-finger">–</div>
+          <small class="muted">Last finger session</small>
         </div>
       </div>
 
       <div class="card">
-        <h2>Movement quality over time</h2>
-        <div class="muted">Illustrative weekly performance</div>
-        <div class="chart" style="height:190px">
-          <div class="barcol"><i style="height:38%"></i><small>W1</small></div>
-          <div class="barcol"><i style="height:48%"></i><small>W2</small></div>
-          <div class="barcol"><i style="height:56%"></i><small>W3</small></div>
-          <div class="barcol"><i style="height:52%"></i><small>W4</small></div>
-          <div class="barcol"><i style="height:68%"></i><small>W5</small></div>
-          <div class="barcol"><i style="height:78%"></i><small>W6</small></div>
-          <div class="barcol"><i style="height:85%"></i><small>W7</small></div>
-        </div>
+        <h2>Recent results</h2>
+        <div class="muted">How much of the target you reached in your last 10 sessions. Red means pain or going past the limit.</div>
+        <div class="chart" id="results-chart" style="height:190px"></div>
       </div>
 
       <div class="card" style="margin-top:14px">
-        <h2>Recent sessions</h2>
+        <h2>History</h2>
         <div id="recent"></div>
       </div>
 
       <div class="controls" style="margin-top:14px">
-        <button id="report">↓ Export report</button>
-        <button id="clear">Clear saved sessions</button>
-      </div>
-    </section>
-
-    <!-- PHYSIOTHERAPIST -->
-    <section class="page" id="clinician">
-      <div class="hero">
-        <div>
-          <div class="eyebrow">CLINICIAN WORKSPACE</div>
-          <h2>Patient overview</h2>
-          <div class="muted">Review exercise adherence, accuracy, and finger-level difficulty.</div>
-        </div>
-      </div>
-
-      <div class="grid">
-        <div class="card">
-          <div class="metric-label">PATIENTS</div>
-          <div class="metric">24</div>
-          <small class="muted">Demo accounts</small>
-        </div>
-        <div class="card">
-          <div class="metric-label">ACTIVE THIS WEEK</div>
-          <div class="metric">18</div>
-          <small class="muted">Sample activity</small>
-        </div>
-        <div class="card">
-          <div class="metric-label">SESSIONS</div>
-          <div class="metric">76</div>
-          <small class="muted">This week</small>
-        </div>
-        <div class="card">
-          <div class="metric-label">NEEDS REVIEW</div>
-          <div class="metric">3</div>
-          <small class="muted">Demo indicator</small>
-        </div>
-      </div>
-
-      <div class="card">
-        <h2>Patient list</h2>
-        <div class="patient head">
-          <span>PATIENT</span><span>ACTIVITY</span><span>SCORE</span><span>STATUS</span>
-        </div>
-        <div class="patient">
-          <b>Alex Morgan</b><span>Today · Ring finger lag</span><b>85%</b><span class="tag">Active</span>
-        </div>
-        <div class="patient">
-          <b>Jamie Davis</b><span>Yesterday · Pinky misses</span><b>78%</b><span class="tag">Review</span>
-        </div>
-        <div class="patient">
-          <b>Sam Kim</b><span>Today · Steady rhythm</span><b>91%</b><span class="tag">Active</span>
-        </div>
-        <div class="patient">
-          <b>Taylor Reed</b><span>3 days ago</span><b>69%</b><span class="tag">Review</span>
-        </div>
-      </div>
-
-      <div class="feedback">
-        All patients and metrics shown are fictional demo data. A production
-        dashboard needs authentication, role-based access and secure patient records.
+        <button id="report">Download my history</button>
       </div>
     </section>
 
@@ -1062,13 +943,9 @@
         </div>
       </div>
 
-      <div class="feedback">
-        Patient data privacy, consent, secure storage and access controls must be
-        implemented before collecting real patient information.
-      </div>
     </section>
 
-    <footer>GEM · Adaptive Rehabilitation Assistant · Concept prototype</footer>
+    <footer>ability+</footer>
   </main>
 </div>
 
@@ -1077,15 +954,14 @@
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="demo-title">
     <div class="session-header">
       <div>
-        <div class="eyebrow">ANIMATED MOVEMENT GUIDE</div>
         <h2 id="demo-title" style="margin-top:4px">Arm curl</h2>
       </div>
-      <button id="demo-close" aria-label="Close example">✕</button>
+      <button id="demo-close">Close</button>
     </div>
 
     <div class="toolbar-group" style="margin-top:12px">
-      <button class="demo-tab active-tab" data-demo="curl">💪 Arm curl</button>
-      <button class="demo-tab" data-demo="tap">🖐️ Sequential fingers</button>
+      <button class="demo-tab active-tab" data-demo="curl">Arm curl</button>
+      <button class="demo-tab" data-demo="tap">Finger opposition</button>
     </div>
 
     <div class="demo-stage">
@@ -1113,7 +989,7 @@
             <circle class="skin" cx="9" cy="118" r="7.5"/>
           </g>
 
-          <line x1="250" y1="12" x2="250" y2="238" stroke="#dce6e2" stroke-width="1.5" stroke-dasharray="4 4"/>
+          <line x1="250" y1="12" x2="250" y2="238" stroke="#e1eae6" stroke-width="1.5" stroke-dasharray="4 4"/>
 
           <text x="264" y="18" class="label-hd">2. Right arm (mirrored)</text>
           <path class="pants" d="M358 184 V224 M394 184 V224"/>
@@ -1152,7 +1028,7 @@
 
           <circle id="demo-touch-dot" cx="199" cy="88" r="8" class="touch-orb"/>
 
-          <text x="250" y="236" class="label-sm">1. Index → 2. Middle → 3. Ring → 4. Pinky → then reverse back</text>
+          <text x="250" y="236" class="label-sm">Index, middle, ring, little finger, then back</text>
         </g>
       </svg>
     </div>
@@ -1162,10 +1038,10 @@
     <div class="demo-step-note" id="demo-step-note">Step 1 of 4</div>
 
     <div class="demo-controls">
-      <button class="primary" id="demo-play">▶ Play</button>
-      <button id="demo-prev">← Prev</button>
-      <button id="demo-next">Next →</button>
-      <button id="demo-restart">↺ Restart</button>
+      <button class="primary" id="demo-play">Play</button>
+      <button id="demo-prev">Previous</button>
+      <button id="demo-next">Next</button>
+      <button id="demo-restart">Restart</button>
     </div>
   </div>
 </div>
@@ -1178,34 +1054,14 @@
   // --------------------------------------------------
 
   const pages = {
-    overview: [
-      'PATIENT WORKSPACE / OVERVIEW',
-      'Your rehabilitation journey',
-      'One step at a time.'
-    ],
-    session: [
-      'PATIENT WORKSPACE / LIVE SESSION',
-      'Exercise session',
-      'Follow your prescribed rehabilitation routine.'
-    ],
-    progress: [
-      'PATIENT WORKSPACE / HISTORY',
-      'Your progress',
-      'Review your activity and movement trends.'
-    ],
-    clinician: [
-      'CLINICIAN WORKSPACE',
-      'Physiotherapist dashboard',
-      'Monitor rehabilitation activity and patient progress.'
-    ],
-    settings: [
-      'ACCOUNT / ACCESSIBILITY',
-      'Settings',
-      'Adjust your accessibility preferences.'
-    ]
+    overview: ['Your plan', 'Set by your physiotherapist. Go at your own pace.'],
+    session: ['Movement exercises', 'The camera counts each repetition and warns you before you go too far.'],
+    progress: ['My progress', 'Every session you finish is saved to your account.'],
+    settings: ['Settings', 'Make the app easier to see and hear.']
   };
 
   function showPage(id) {
+    if (!pages[id]) return;          // "Thinking" and "Both at once" are run by cognitive.js / rehab-modes.js
     document.querySelectorAll('.page').forEach(page => {
       page.classList.toggle('active', page.id === id);
     });
@@ -1214,11 +1070,11 @@
       button.classList.toggle('active', button.dataset.page === id);
     });
 
-    $('eyebrow').textContent = pages[id][0];
-    $('title').textContent = pages[id][1];
-    $('subtitle').textContent = pages[id][2];
+    $('eyebrow').textContent = '';
+    $('title').textContent = pages[id][0];
+    $('subtitle').textContent = pages[id][1];
 
-    if (id === 'progress' || id === 'overview') renderHistory();
+    if (id === 'progress' || id === 'overview') loadHistory();
   }
 
   document.querySelectorAll('[data-page]').forEach(button => {
@@ -1235,8 +1091,22 @@
 
   const NAMES = {
     curl: 'Arm curl',
-    tap: 'Sequential finger opposition'
+    tap: 'Finger opposition'
   };
+
+  // Prescriptions from the physiotherapist (loaded from /api/patient/overview)
+  let RX = null;
+  function curlRx() {
+    const rx = (RX && RX.curl) || {};
+    return { rest: rx.rest_angle ?? 160, target: rx.target_angle ?? 100, safe: rx.safe_limit ?? 85, reps: rx.reps ?? 5 };
+  }
+  function tapReps() { return (RX && RX.tap && RX.tap.reps) || 10; }
+
+  async function loadPlan() {
+    try { RX = (await api('/api/patient/overview')).prescriptions; } catch (error) { console.error(error); }
+    if (!running) applyExerciseUI();
+    renderPlan();
+  }
 
   let exercise = 'curl';
   let side = 'auto';
@@ -1275,12 +1145,12 @@
     const statusBox = $('camera-status');
 
     if (cameraConnected) {
-      connectBtn.textContent = '✓ Camera connected';
+      connectBtn.textContent = 'Camera on';
       connectBtn.classList.remove('primary');
       connectBtn.classList.add('connected');
       stopCamBtn.disabled = false;
     } else {
-      connectBtn.textContent = '📷 Connect camera';
+      connectBtn.textContent = 'Connect camera';
       connectBtn.classList.add('primary');
       connectBtn.classList.remove('connected');
       stopCamBtn.disabled = true;
@@ -1293,9 +1163,9 @@
 
     if (sessionState === 'running') {
       badge.className = 'tag running';
-      badge.textContent = '● SESSION RUNNING';
+      badge.textContent = 'Running';
 
-      startBtn.textContent = '● Running...';
+      startBtn.textContent = 'Running';
       startBtn.classList.add('running-btn');
       startBtn.disabled = true;
 
@@ -1311,26 +1181,26 @@
       $('exercise').disabled = false;
       $('side').disabled = false;
 
-      startBtn.textContent = '▶ Start exercise';
+      startBtn.textContent = 'Start';
       startBtn.disabled = !cameraConnected;
       finishBtn.disabled = true;
       painBtn.disabled = true;
 
       if (sessionState === 'stopped') {
         badge.className = 'tag stopped';
-        badge.textContent = '■ SESSION STOPPED & SAVED';
+        badge.textContent = 'Stopped and saved';
         statusBox.classList.add('stopped-banner');
       } else if (sessionState === 'pain') {
         badge.className = 'tag pain';
-        badge.textContent = '⚠ STOPPED — PAIN REPORTED';
+        badge.textContent = 'Stopped: pain';
         painBtn.classList.add('triggered');
         statusBox.classList.add('warn');
       } else if (sessionState === 'completed') {
         badge.className = 'tag done';
-        badge.textContent = '✓ TARGET COMPLETED';
+        badge.textContent = 'Target reached';
       } else {
         badge.className = 'tag idle';
-        badge.textContent = cameraConnected ? '● READY TO START' : '● IDLE — CAMERA OFF';
+        badge.textContent = cameraConnected ? 'Ready' : 'Camera off';
       }
     }
   }
@@ -1417,7 +1287,7 @@
   function setVoiceUI(on) {
     $('audio').checked = on;
     const b = $('voice-toggle');
-    b.textContent = on ? '🔊 Voice on' : '🔇 Voice off';
+    b.textContent = on ? 'Voice on' : 'Voice off';
     b.setAttribute('aria-pressed', String(on));
     try { localStorage.setItem('gem_voice', on ? '1' : '0'); } catch (_) {}
     if (!on) resetVoice();
@@ -1496,7 +1366,8 @@
   function applyExerciseUI() {
     exercise = $('exercise').value;
     side = $('side').value;
-    target = exercise === 'tap' ? 10 : 5;
+    const c = curlRx();
+    target = exercise === 'tap' ? tapReps() : c.reps;
 
     $('ex-title').textContent = NAMES[exercise];
     $('summary-card').classList.remove('visible');
@@ -1514,10 +1385,19 @@
 
     if (exercise === 'curl') {
       $('ex-help').textContent =
-        'Stand or sit so your arm and shoulder are visible. Start with your arm straight (160°) and curl to 100°. Do not bend past 85°.';
+        `Stand or sit so your arm and shoulder are visible. Start with your arm straight (about ${c.rest}°), ` +
+        `bend to ${c.target}°, then straighten again. Never bend past ${c.safe}°.`;
+      $('step-rest').textContent = `1. Straight arm (${c.rest}°)`;
+      $('step-bend').textContent = `2. Bend to ${c.target}°`;
+      $('curl-repeat').textContent = `Repeat ${target} times`;
+      const pct = v => Math.max(0, Math.min(100, v / 180 * 100));
+      $('g-danger').style.cssText = `left:0;width:${pct(c.safe)}%`;
+      $('g-goal').style.cssText = `left:${pct(c.safe)}%;width:${pct(c.target) - pct(c.safe)}%`;
+      $('g-label').textContent = `limit ${c.safe}°, target ${c.target}°`;
     } else {
       $('ex-help').textContent =
-        'Hold your hand open with fingers extended, then touch your thumb to Index → Middle → Ring → Pinky, and repeat backwards.';
+        `Hold your hand open with the fingers spread. Touch your thumb to your index, middle, ring and little finger, then go back. ${target} touches.`;
+      $('finger-repeat').textContent = `Then back again, ${target} touches in total`;
     }
 
     $('side-detected').textContent = `Side: ${side}`;
@@ -1556,7 +1436,7 @@
     }
 
     $('connect').disabled = true;
-    status('Connecting to Python camera...');
+    status('Starting the camera…');
 
     try {
       await api('/api/camera/start', { method: 'POST' });
@@ -1568,12 +1448,12 @@
       $('placeholder').style.display = 'none';
 
       updateSessionControlsUI('idle');
-      status('Camera connected. Choose an exercise and press "Start exercise".');
+      status('Camera connected. Choose an exercise and press "Start".');
       say('Camera connected. You are ready to begin.');
 
     } catch (error) {
       status('Could not connect camera: ' + error.message);
-      say('Could not connect to the camera. Check that the Python server is running.', true);
+      say('Could not connect to the camera.', true);
     } finally {
       $('connect').disabled = false;
     }
@@ -1627,6 +1507,7 @@
       });
 
       count = Number(result.reps ?? 0);
+      target = Number(result.target_reps ?? target);
       setReps(count);
 
       running = true;
@@ -1638,12 +1519,12 @@
 
       if (exercise === 'curl') {
         highlightCurlStep('REST');
-        say('Start with your arm straight, then curl up to 100°.');
+        say(`Start with your arm straight, then bend to ${curlRx().target} degrees.`);
       } else {
-        say('Hold your hand open with fingers extended, then touch thumb to Index finger.');
+        say('Hold your hand open, then touch your thumb to your index finger.');
       }
 
-      status('Exercise in progress — press "Stop & save" when finished.');
+      status('Exercise running. Press "Stop and save" when you finish.');
 
       pollingTimer = setInterval(updateTracking, 200);
       durationTimer = setInterval(updateDuration, 1000);
@@ -1728,7 +1609,7 @@
 
     } catch (error) {
       console.error('Tracking update failed:', error);
-      status('Lost connection to the Python tracking server.');
+      status('Lost connection to the tracking server.');
     }
   }
 
@@ -1752,39 +1633,39 @@
     const activeSec = summary?.active_sec ?? elapsedSeconds;
     const detectedSide = summary?.side ? summary.side.toUpperCase() : side.toUpperCase();
 
-    title.textContent = `${NAMES[exercise]} — Session Summary`;
+    title.textContent = `${NAMES[exercise]}: summary`;
     tag.textContent = {
-      completed: '✓ Completed',
-      manual: '■ Stopped & Saved',
-      pain: '⚠ Pain Stop'
+      completed: 'Completed',
+      manual: 'Stopped and saved',
+      pain: 'Stopped: pain'
     }[reason] || 'Saved';
 
     let items = [
-      { label: 'TOTAL TIME TAKEN', value: `${totalSec}s (${formatTime(Math.round(totalSec))})` },
-      { label: 'ACTIVE MOVEMENT TIME', value: `${activeSec}s` },
-      { label: 'COMPLETED REPS', value: `${count} / ${target}` },
-      { label: 'DETECTED SIDE', value: detectedSide },
+      { label: 'Total time', value: formatTime(Math.round(totalSec)) },
+      { label: 'Time moving', value: `${Math.round(activeSec)} s` },
+      { label: exercise === 'tap' ? 'Touches' : 'Repetitions', value: `${count} of ${target}` },
+      { label: 'Side', value: detectedSide.toLowerCase() },
     ];
 
     if (summary?.finger_metrics) {
       const fm = summary.finger_metrics;
       items.push(
-        { label: 'MOVEMENT ACCURACY', value: `${fm.accuracy_pct}%` },
-        { label: 'AVG TOUCH PACE', value: fm.avg_touch_sec !== null ? `${fm.avg_touch_sec}s / touch` : '—' },
-        { label: 'RHYTHM CONSISTENCY', value: fm.consistency_pct !== null ? `${fm.consistency_pct}%` : '—' },
-        { label: 'HARDEST FINGER', value: fm.hardest_finger ? fm.hardest_finger.toUpperCase() : 'None (0 misses)' }
+        { label: 'Correct finger', value: `${fm.accuracy_pct}%` },
+        { label: 'Time per touch', value: fm.avg_touch_sec !== null ? `${fm.avg_touch_sec} s` : '–' },
+        { label: 'Steady rhythm', value: fm.consistency_pct !== null ? `${fm.consistency_pct}%` : '–' },
+        { label: 'Hardest finger', value: fm.hardest_finger ? fm.hardest_finger : 'None' }
       );
     } else {
       const rom = summary?.rom_deg !== null && summary?.rom_deg !== undefined ? `${summary.rom_deg}°` : '—';
       const minA = summary?.lowest_angle !== null && summary?.lowest_angle !== undefined ? `${Math.round(summary.lowest_angle)}°` : '—';
       const maxA = summary?.highest_angle !== null && summary?.highest_angle !== undefined ? `${Math.round(summary.highest_angle)}°` : '—';
-      const pace = summary?.avg_rep_sec !== null && summary?.avg_rep_sec !== undefined ? `${summary.avg_rep_sec}s / rep` : '—';
+      const pace = summary?.avg_rep_sec !== null && summary?.avg_rep_sec !== undefined ? `${summary.avg_rep_sec} s` : '—';
 
       items.push(
-        { label: 'RANGE OF MOTION (ROM)', value: rom },
-        { label: 'ANGLE SPAN (MIN → MAX)', value: `${minA} → ${maxA}` },
-        { label: 'AVG REP PACE', value: pace },
-        { label: 'PARTIAL / OUT-OF-RANGE', value: `${summary?.partial_reps ?? 0} partial / ${summary?.out_of_range ?? 0} over` }
+        { label: 'Range of motion', value: rom },
+        { label: 'Deepest to straightest', value: `${minA} to ${maxA}` },
+        { label: 'Time per repetition', value: pace },
+        { label: 'Not deep enough / past the limit', value: `${summary?.partial_reps ?? 0} / ${summary?.out_of_range ?? 0}` }
       );
     }
 
@@ -1845,25 +1726,8 @@
       $('minangle').textContent = lowestAngle + '°';
     }
 
-    const fingerMetrics = summary?.finger_metrics || null;
-
-    const session = {
-      date: new Date().toISOString(),
-      exercise,
-      side: summary?.side || side,
-      reps: count,
-      target,
-      seconds: summary?.duration_sec ?? elapsedSeconds,
-      activeSeconds: summary?.active_sec ?? elapsedSeconds,
-      romDeg: summary?.rom_deg ?? null,
-      avgRepSec: summary?.avg_rep_sec ?? null,
-      minAngle: exercise !== 'tap' ? lowestAngle : null,
-      fingerMetrics,
-      endedBy: reason
-    };
-
-    saveSession(session);
     renderSessionSummary(summary, elapsedSeconds, reason);
+    loadHistory();
 
     if (reason === 'pain') {
       updateSessionControlsUI('pain');
@@ -1886,181 +1750,176 @@
   $('pain').addEventListener('click', () => finishSession('pain'));
 
   // --------------------------------------------------
-  // LOCAL SESSION STORAGE
+  // HISTORY (saved sessions from the server: movement, thinking games, dual-task)
   // --------------------------------------------------
 
-  function loadSessions() {
-    try {
-      return JSON.parse(localStorage.getItem('gem_sessions') || '[]');
-    } catch {
-      return [];
-    }
-  }
+  const LABELS = {
+    elbow_curl: 'Arm curl', finger_opposition: 'Finger opposition', dual_task: 'Dual-task',
+    cognitive_logic: 'Odd one out', cognitive_memory: 'Memory sequence'
+  };
+  let HISTORY = [];                                   // newest first
 
-  function saveSession(session) {
-    try {
-      const sessions = loadSessions();
-      sessions.push(session);
-      localStorage.setItem('gem_sessions', JSON.stringify(sessions));
-    } catch (error) {
-      console.error('Could not save session:', error);
-    }
-
+  async function loadHistory() {
+    try { HISTORY = (await api('/api/patient/sessions')).sessions || []; } catch (error) { console.error(error); }
     renderHistory();
   }
 
-  function renderHistory() {
-    const sessions = loadSessions();
+  const dayKey = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const when = iso => new Date(iso).toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 
-    $('home-sessions').textContent = sessions.length;
-    $('total-sessions').textContent = sessions.length;
-
-    $('home-reps').textContent = sessions.reduce(
-      (total, session) => total + Number(session.reps || 0),
-      0
-    );
-
-    if (sessions.length) {
-      const completedCount = sessions.filter(
-        s => s.endedBy === 'completed' || Number(s.reps) >= Number(s.target)
-      ).length;
-      const rate = Math.round((completedCount / sessions.length) * 100);
-      $('home-completion').textContent = `${rate}%`;
-      $('home-completion-sub').textContent = `${completedCount} of ${sessions.length} goals met`;
-
-      const totalActiveSec = Math.round(
-        sessions.reduce((sum, s) => sum + Number(s.activeSeconds ?? s.seconds ?? 0), 0)
-      );
-      const mins = Math.floor(totalActiveSec / 60);
-      const secs = totalActiveSec % 60;
-      $('home-active-time').textContent = `${mins}m ${secs}s`;
-    } else {
-      $('home-completion').textContent = '—';
-      $('home-completion-sub').textContent = 'Target goals reached';
-      $('home-active-time').textContent = '0m 0s';
+  function renderBars(box, items) {
+    box.innerHTML = '';
+    const max = Math.max(1, ...items.map(i => i.value));
+    for (const i of items) {
+      const col = document.createElement('div');
+      col.className = 'barcol';
+      if (i.title) col.title = i.title;
+      const num = document.createElement('b');
+      num.textContent = i.text ?? (i.value || '');
+      const bar = document.createElement('i');
+      bar.style.height = (i.value ? Math.max(6, i.value / max * 100) : 2) + '%';
+      if (i.warn) bar.classList.add('warn');
+      const lab = document.createElement('small');
+      lab.textContent = i.label;
+      col.append(num, bar, lab);
+      box.append(col);
     }
+  }
 
-    const fingerSessions = sessions.filter(s => s.exercise === 'tap' && s.fingerMetrics);
-    if (fingerSessions.length) {
-      const latest = fingerSessions[fingerSessions.length - 1].fingerMetrics;
-      const avgAcc = (
-        fingerSessions.reduce((sum, s) => sum + Number(s.fingerMetrics.accuracy_pct || 0), 0) /
-        fingerSessions.length
-      ).toFixed(1);
-      $('avg-accuracy').textContent = `${avgAcc}%`;
+  function renderPlan() {
+    const box = $('plan-list');
+    if (!box) return;
+    const c = curlRx();
+    const today = dayKey(new Date());
+    const doneToday = ex => HISTORY.some(s => s.exercise === ex && s.completed && dayKey(new Date(s.created_at)) === today);
+    const rows = [
+      ['elbow_curl', 'Arm curl', `${c.reps} repetitions. Bend from ${c.rest}° to ${c.target}°, never past ${c.safe}°.`],
+      ['finger_opposition', 'Finger opposition', `${tapReps()} touches. Index, middle, ring, little finger and back.`],
+    ];
+    box.innerHTML = '';
+    for (const [ex, name, detail] of rows) {
+      const row = document.createElement('div');
+      row.className = 'exercise';
+      const text = document.createElement('div');
+      text.style.flex = '1';
+      const b = document.createElement('b');
+      b.textContent = name;
+      const d = document.createElement('div');
+      d.className = 'muted';
+      d.textContent = detail;
+      text.append(b, d);
+      row.append(text);
+      if (doneToday(ex)) {
+        const tag = document.createElement('span');
+        tag.className = 'tag done';
+        tag.textContent = 'Done today';
+        row.append(tag);
+      }
+      box.append(row);
+    }
+  }
 
-      const speeds = fingerSessions
-        .map(s => s.fingerMetrics.avg_touch_sec)
-        .filter(v => v !== null && v !== undefined);
-      $('avg-speed').textContent = speeds.length
-        ? `${(speeds.reduce((a, b) => a + b, 0) / speeds.length).toFixed(2)}s`
-        : '—';
+  function renderHistory() {
+    const S = HISTORY;
+    const physical = S.filter(s => s.exercise === 'elbow_curl' || s.exercise === 'finger_opposition');
+    const completed = S.filter(s => s.completed).length;
 
-      $('hardest-finger').textContent = latest.hardest_finger ? latest.hardest_finger.toUpperCase() : 'None';
+    $('home-sessions').textContent = S.length;
+    $('total-sessions').textContent = S.length;
+    $('home-reps').textContent = physical.reduce((t, s) => t + Number(s.reps || 0), 0);
+    $('home-completion').textContent = S.length ? `${Math.round(completed / S.length * 100)}%` : '–';
+    $('home-completion-sub').textContent = S.length ? `${completed} of ${S.length} sessions` : 'No sessions yet';
+    const minutes = Math.round(S.reduce((t, s) => t + Number(s.active_sec ?? s.duration_sec ?? 0), 0) / 60);
+    $('home-active-time').textContent = `${minutes} min`;
+
+    const today = dayKey(new Date());
+    const doneToday = S.filter(s => s.completed && dayKey(new Date(s.created_at)) === today).length;
+    $('hero-title').textContent = doneToday ? `${doneToday} session${doneToday > 1 ? 's' : ''} done today` : "Ready for today's exercises?";
+
+    const days = [...Array(7)].map((_, i) => { const d = new Date(); d.setDate(d.getDate() - 6 + i); return d; });
+    renderBars($('week-chart'), days.map(d => ({
+      value: S.filter(s => dayKey(new Date(s.created_at)) === dayKey(d)).length,
+      label: d.toLocaleDateString('en-GB', { weekday: 'short' })
+    })));
+
+    const finger = S.filter(s => s.exercise === 'finger_opposition' && s.accuracy_pct != null);
+    $('avg-accuracy').textContent = finger.length
+      ? `${Math.round(finger.reduce((t, s) => t + Number(s.accuracy_pct), 0) / finger.length)}%` : '–';
+    const speeds = finger.map(s => s.finger?.avg_touch_sec).filter(v => v != null);
+    $('avg-speed').textContent = speeds.length ? `${(speeds.reduce((a, b) => a + b, 0) / speeds.length).toFixed(1)} s` : '–';
+    $('hardest-finger').textContent = finger.length ? (finger[0].finger?.hardest_finger || 'None') : '–';
+
+    const last10 = S.slice(0, 10).reverse();
+    if (last10.length) {
+      renderBars($('results-chart'), last10.map(s => {
+        const p = s.target_reps ? Math.min(100, Math.round(s.reps / s.target_reps * 100)) : 0;
+        return { value: p, text: `${p}%`, warn: s.pain || s.out_of_range > 0, title: LABELS[s.exercise] || s.exercise,
+                 label: new Date(s.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) };
+      }));
     } else {
-      $('avg-accuracy').textContent = '—';
-      $('avg-speed').textContent = '—';
-      $('hardest-finger').textContent = '—';
+      $('results-chart').innerHTML = '<div class="empty">No sessions yet.</div>';
     }
 
     const recent = $('recent');
     recent.innerHTML = '';
-
-    if (!sessions.length) {
-      const empty = document.createElement('div');
-      empty.className = 'muted';
-      empty.textContent = 'No sessions yet. Finish an exercise to see it here.';
-      recent.appendChild(empty);
-      return;
+    if (!S.length) {
+      recent.innerHTML = '<div class="empty">No sessions yet. Finish an exercise and it appears here.</div>';
     }
-
-    sessions.slice(-5).reverse().forEach(session => {
+    S.slice(0, 8).forEach(s => {
       const item = document.createElement('div');
       item.className = 'exercise';
-
-      const icon = session.exercise === 'tap' ? '🖐️ ' : '💪 ';
-      const name = NAMES[session.exercise] || session.exercise;
-      const sideText = session.side ? ` (${session.side})` : '';
-      const date = new Date(session.date).toLocaleString();
-
-      let detail = `${icon}${name}${sideText} · ${date} · ${session.reps}/${session.target} reps · ${session.seconds}s`;
-      if (session.fingerMetrics) {
-        const fm = session.fingerMetrics;
-        detail += ` · Acc: ${fm.accuracy_pct}% · Consistency: ${fm.consistency_pct}% · Missed: ${fm.missed_touches}`;
-        if (fm.hardest_finger) {
-          detail += ` · Hardest: ${fm.hardest_finger}`;
-        }
-      } else if (session.romDeg !== null && session.romDeg !== undefined) {
-        detail += ` · ROM: ${session.romDeg}°`;
+      const text = document.createElement('div');
+      text.style.flex = '1';
+      const b = document.createElement('b');
+      b.textContent = LABELS[s.exercise] || s.exercise;
+      const unit = s.exercise === 'dual_task' || s.exercise.startsWith('cognitive') ? 'correct' :
+                   s.exercise === 'finger_opposition' ? 'touches' : 'repetitions';
+      const d = document.createElement('div');
+      d.className = 'muted';
+      d.textContent = `${when(s.created_at)}, ${s.reps} of ${s.target_reps ?? '?'} ${unit}` +
+        (s.duration_sec != null ? `, ${formatTime(Math.round(s.duration_sec))}` : '');
+      text.append(b, d);
+      if (s.doctor_note) {
+        const note = document.createElement('div');
+        note.textContent = `Note from your physiotherapist: ${s.doctor_note}`;
+        text.append(note);
       }
-
-      const description = document.createElement('div');
-      description.style.flex = '1';
-      description.textContent = detail;
-
       const tag = document.createElement('span');
-      tag.className = 'tag';
-      tag.textContent = {
-        completed: 'Completed',
-        manual: 'Stopped',
-        pain: 'Pain stop'
-      }[session.endedBy] || 'Saved';
-
-      item.appendChild(description);
-      item.appendChild(tag);
-      recent.appendChild(item);
+      tag.className = s.pain ? 'tag pain' : s.completed ? 'tag done' : 'tag idle';
+      tag.textContent = s.pain ? 'Pain stop' : s.completed ? 'Completed' : 'Stopped early';
+      item.append(text, tag);
+      recent.append(item);
     });
+
+    renderPlan();
   }
 
-  // --------------------------------------------------
-  // EXPORT AND CLEAR HISTORY
-  // --------------------------------------------------
-
-  $('clear').addEventListener('click', () => {
-    if (!confirm('Are you sure you want to clear all saved sessions?')) return;
-
-    localStorage.removeItem('gem_sessions');
-    renderHistory();
+  $('report').addEventListener('click', () => {
+    const lines = HISTORY.slice().reverse().map(s => [
+      s.created_at, LABELS[s.exercise] || s.exercise, `${s.reps} of ${s.target_reps ?? '?'}`,
+      s.duration_sec != null ? `${Math.round(s.duration_sec)} s` : '',
+      s.pain ? 'stopped: pain' : s.completed ? 'completed' : 'stopped early',
+      s.doctor_note ? `physiotherapist note: ${s.doctor_note}` : ''
+    ].filter(Boolean).join(' | '));
+    const report = ['ability+ history', '', 'Angles are webcam estimates, not clinical measurements.',
+                    `Sessions: ${HISTORY.length}`, '', lines.join('\n') || 'No sessions yet.'].join('\n');
+    const url = URL.createObjectURL(new Blob([report], { type: 'text/plain' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'abilityplus-history.txt';
+    link.click();
+    URL.revokeObjectURL(url);
   });
 
-  $('report').addEventListener('click', () => {
-    const sessions = loadSessions();
-
-    const lines = sessions.map(session => {
-      const name = NAMES[session.exercise] || session.exercise;
-      const fm = session.fingerMetrics;
-      const extra = fm
-        ? `accuracy: ${fm.accuracy_pct}% | avg speed: ${fm.avg_touch_sec ?? 'n/a'}s | consistency: ${fm.consistency_pct}% | missed: ${fm.missed_touches} | hardest finger: ${fm.hardest_finger ?? 'none'}`
-        : `side: ${session.side ?? 'auto'} | ROM: ${session.romDeg ?? 'n/a'} deg | avg pace: ${session.avgRepSec ?? 'n/a'}s/rep`;
-
-      return [
-        session.date,
-        name,
-        `${session.reps}/${session.target} reps`,
-        `${session.seconds}s`,
-        extra,
-        `ended by: ${session.endedBy}`
-      ].join(' | ');
-    });
-
-    const report = [
-      'GEM — ABILITY Progress Report',
-      '',
-      'Prototype data, not clinical measurements.',
-      `Sessions: ${sessions.length}`,
-      '',
-      lines.join('\n') || 'No sessions saved yet.'
-    ].join('\n');
-
-    const blob = new Blob([report], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-
-    link.href = url;
-    link.download = 'gem-progress.txt';
-    link.click();
-
-    URL.revokeObjectURL(url);
+  // The thinking games use the browser camera; they release the server camera first.
+  window.addEventListener('ability:camera-released', () => {
+    if (running) return;
+    cameraConnected = false;
+    $('videoFeed').src = '';
+    $('videoFeed').style.display = 'none';
+    $('placeholder').style.display = 'block';
+    updateSessionControlsUI('idle');
+    status('Camera off.');
   });
 
   // --------------------------------------------------
@@ -2088,7 +1947,7 @@
       title: 'Arm curl (front view)',
       steps: [
         {
-          note: 'Step 1 of 4 · Left arm first: start straight out',
+          note: 'Step 1 of 4: Left arm first: start straight out',
           caption: '1. Left arm first: hold your arm straight out facing the camera, shoulder steady.',
           apply: () => {
             demoArt.classList.remove('l-curled', 'r-curled');
@@ -2097,8 +1956,8 @@
           }
         },
         {
-          note: 'Step 2 of 4 · Left elbow curls up 90°',
-          caption: '2. Keep your upper arm still and bend ONLY at the elbow 90° upward, then lower back.',
+          note: 'Step 2 of 4: Left elbow curls up 90°',
+          caption: '2. Keep your upper arm still and bend only at the elbow, about 90°, then lower back.',
           apply: () => {
             demoArt.classList.add('l-curled');
             demoArt.classList.remove('r-curled');
@@ -2107,7 +1966,7 @@
           }
         },
         {
-          note: 'Step 3 of 4 · Right arm: start straight out',
+          note: 'Step 3 of 4: Right arm: start straight out',
           caption: '3. Next, extend your right arm straight out with only your elbow ready to bend.',
           apply: () => {
             demoArt.classList.remove('l-curled', 'r-curled');
@@ -2116,7 +1975,7 @@
           }
         },
         {
-          note: 'Step 4 of 4 · Right elbow curls up 90°',
+          note: 'Step 4 of 4: Right elbow curls up 90°',
           caption: '4. Curl your right forearm up 90° at the elbow while keeping the shoulder still.',
           apply: () => {
             demoArt.classList.remove('l-curled');
@@ -2131,56 +1990,56 @@
       title: 'Sequential finger opposition',
       steps: [
         {
-          note: 'Step 1 of 8 · 1. Index bends to thumb',
+          note: 'Step 1 of 8: 1. Index bends to thumb',
           caption: '1. Index bends to meet your thumb gently.',
           finger: 'f-index',
           thumbD: 'M 192 162 Q 168 122 199 88',
           dot: [199, 88]
         },
         {
-          note: 'Step 2 of 8 · 2. Middle bends to thumb',
+          note: 'Step 2 of 8: 2. Middle bends to thumb',
           caption: '2. Middle finger bends to touch your thumb.',
           finger: 'f-middle',
           thumbD: 'M 192 162 Q 178 116 226 84',
           dot: [226, 84]
         },
         {
-          note: 'Step 3 of 8 · 3. Ring bends to thumb',
+          note: 'Step 3 of 8: 3. Ring bends to thumb',
           caption: '3. Ring finger bends to touch your thumb.',
           finger: 'f-ring',
           thumbD: 'M 192 162 Q 204 114 253 88',
           dot: [253, 88]
         },
         {
-          note: 'Step 4 of 8 · 4. Pinky bends to thumb',
+          note: 'Step 4 of 8: 4. Pinky bends to thumb',
           caption: '4. Pinky bends to touch your thumb, completing the forward pass.',
           finger: 'f-pinky',
           thumbD: 'M 192 162 Q 226 116 279 96',
           dot: [279, 96]
         },
         {
-          note: 'Step 5 of 8 · Reverse: Pinky touches thumb',
+          note: 'Step 5 of 8: Reverse: Pinky touches thumb',
           caption: 'Now repeat backwards: Pinky touches your thumb again.',
           finger: 'f-pinky',
           thumbD: 'M 192 162 Q 226 116 279 96',
           dot: [279, 96]
         },
         {
-          note: 'Step 6 of 8 · Reverse: Ring touches thumb',
+          note: 'Step 6 of 8: Reverse: Ring touches thumb',
           caption: 'Moving back: Ring finger touches your thumb.',
           finger: 'f-ring',
           thumbD: 'M 192 162 Q 204 114 253 88',
           dot: [253, 88]
         },
         {
-          note: 'Step 7 of 8 · Reverse: Middle touches thumb',
+          note: 'Step 7 of 8: Reverse: Middle touches thumb',
           caption: 'Moving back: Middle finger touches your thumb.',
           finger: 'f-middle',
           thumbD: 'M 192 162 Q 178 116 226 84',
           dot: [226, 84]
         },
         {
-          note: 'Step 8 of 8 · Reverse: Index touches thumb',
+          note: 'Step 8 of 8: Reverse: Index touches thumb',
           caption: 'Moving back: Index finger finishes the cycle at your thumb.',
           finger: 'f-index',
           thumbD: 'M 192 162 Q 168 122 199 88',
@@ -2237,14 +2096,14 @@
     demoPlaying = false;
     clearInterval(demoTimer);
     demoTimer = null;
-    demoPlayBtn.textContent = '▶ Play';
+    demoPlayBtn.textContent = 'Play';
   }
 
   function startDemoPlay() {
     if ($('reduce').checked) return;
     stopDemoPlay();
     demoPlaying = true;
-    demoPlayBtn.textContent = '⏸ Pause';
+    demoPlayBtn.textContent = 'Pause';
     const intervalMs = currentDemoKey === 'curl' ? 1400 : 950;
     demoTimer = setInterval(() => {
       const total = DEMO_SCRIPTS[currentDemoKey].steps.length;
@@ -2349,7 +2208,8 @@
   try { setVoiceUI(localStorage.getItem('gem_voice') !== '0'); } catch (_) { setVoiceUI(true); }
   applyExerciseUI();
   updateSessionControlsUI('idle');
-  renderHistory();
+  loadPlan();
+  loadHistory();
 
   window.addEventListener('beforeunload', () => {
     if (pollingTimer) clearInterval(pollingTimer);

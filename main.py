@@ -1,8 +1,11 @@
 """
-Rehab Assistant web app — Flask backend.
+ability+ — Flask backend.
 
 Login, SQL storage and patient <-> physiotherapist data exchange: see auth_db.py.
 Pages: /login, / (patient mode selector + physical & cognitive screens), /doctor (physiotherapist dashboard).
+
+Run:   python main.py          then open http://127.0.0.1:5000
+Test without a webcam:  REHAB_VIDEO=test.mp4 python main.py   (plays a video file instead)
 
 Supports:
   - Arm curl (left, right, or auto-detected arm — 5 reps)
@@ -10,8 +13,8 @@ Supports:
   - Dual-task mode: hold a posture while answering questions by head tilt (rehab_modes.py, /api/dual/*)
   - Fatigue detection → guided breathing break (pause/resume), shoulder-tension check
 """
-import json
 import os
+import sys
 import threading
 import time
 
@@ -31,13 +34,13 @@ from rehab_modes import POSTURES, DualTaskSession, FatigueMonitor, shoulder_rati
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 FRONTEND_DIR = os.path.join(BASE_DIR, "frontend")
 MODEL_DIR = os.path.join(BASE_DIR, "models")
-SESSION_DIR = os.path.join(BASE_DIR, "sessions")
 
 POSE_MODEL = os.path.join(MODEL_DIR, "pose_landmarker_full.task")
 HAND_MODEL = os.path.join(MODEL_DIR, "hand_landmarker.task")
 
 VIDEO_SOURCE = os.environ.get("REHAB_VIDEO")
 MIRROR = VIDEO_SOURCE is None
+CAMERA_START_TIMEOUT_SEC = 10      # loading the pose models + opening the webcam
 
 PRESCRIPTIONS = {
     "curl": {
@@ -62,7 +65,7 @@ init_auth(app, PRESCRIPTIONS, lambda rx: dict(RehabAnalyzer(rx).rx))
 
 
 # --------------------------------------------------
-# SHARED STATE (PHYSICAL MODEL — UNCHANGED)
+# SHARED STATE
 # --------------------------------------------------
 
 lock = threading.Lock()
@@ -106,7 +109,7 @@ tracking = {
 
 
 # --------------------------------------------------
-# STEP 2: ANALYSE ONE FRAME (PHYSICAL MODEL — UNCHANGED)
+# STEP 2: ANALYSE ONE FRAME
 # --------------------------------------------------
 
 def process_tracking(data, t_ms, width, height):
@@ -234,35 +237,51 @@ def draw_dual_overlay(img, ds):
 
 
 # --------------------------------------------------
-# CAMERA AND MEDIAPIPE THREAD (PHYSICAL MODEL — UNCHANGED)
+# CAMERA AND MEDIAPIPE THREAD
 # --------------------------------------------------
 
 def open_capture():
     if VIDEO_SOURCE:
         return cv2.VideoCapture(VIDEO_SOURCE)
-    cap = cv2.VideoCapture(0, cv2.CAP_AVFOUNDATION)
-    if not cap.isOpened():
+    backends = []
+    if sys.platform == "darwin":
+        backends.append(cv2.CAP_AVFOUNDATION)
+    elif sys.platform.startswith("win"):
+        backends.append(cv2.CAP_DSHOW)          # opens much faster than the default on Windows
+    backends.append(cv2.CAP_ANY)
+    cap = None
+    for backend in backends:
+        cap = cv2.VideoCapture(0, backend)
+        if cap.isOpened():
+            return cap
         cap.release()
-        cap = cv2.VideoCapture(0)
     return cap
 
 
 def camera_worker():
     global latest_frame
 
-    cap = open_capture()
-    if not cap.isOpened():
+    missing = [os.path.basename(p) for p in (POSE_MODEL, HAND_MODEL) if not os.path.exists(p)]
+    if missing:
         with lock:
             tracking["camera_connected"] = False
-            tracking["feedback"] = "Cannot access webcam. Check camera permissions."
+            tracking["feedback"] = "Model files missing in models/: " + ", ".join(missing)
+        return
+
+    cap = open_capture()
+    if cap is None or not cap.isOpened():
+        with lock:
+            tracking["camera_connected"] = False
+            tracking["feedback"] = "Cannot open the webcam. Close other apps that use it and check camera permissions."
         return
 
     detector = None
+    failed = False
     try:
         detector = PoseDetector(pose_model_path=POSE_MODEL, hand_model_path=HAND_MODEL, min_confidence=0.5)
         start_time = time.monotonic()
         fps = cap.get(cv2.CAP_PROP_FPS) or 30
-        frame_index, last_ts = 0, -1
+        last_ts = -1
 
         with lock:
             tracking["camera_connected"] = True
@@ -292,7 +311,6 @@ def camera_worker():
             annotated = detector.draw_skeleton(frame, data, vis_threshold=0.5, show_hand_labels=False)
             with lock:
                 reps, pose_detected, num_hands = tracking["reps"], tracking["pose_detected"], tracking["hands"]
-            with lock:
                 ds = dual.state() if dual is not None and dual.phase not in ("done", "stopped") else None
             if ds:
                 draw_dual_overlay(annotated, ds)
@@ -303,9 +321,9 @@ def camera_worker():
             if ok:
                 with lock:
                     latest_frame = buffer.tobytes()
-            frame_index += 1
 
     except Exception as error:
+        failed = True
         print("Camera error:", error)
         with lock:
             tracking["feedback"] = f"Tracking error: {error}"
@@ -317,7 +335,8 @@ def camera_worker():
         with lock:
             tracking["camera_connected"] = False
             tracking["running"] = False
-            tracking["feedback"] = "Camera disconnected."
+            if not failed:                            # keep the real error message visible
+                tracking["feedback"] = "Camera disconnected."
 
 
 def start_camera():
@@ -342,21 +361,7 @@ def stop_camera():
 # WEBSITE ROUTES
 # --------------------------------------------------
 
-@app.route("/login")
-def login_page():
-    return send_from_directory(FRONTEND_DIR, "login.html")
-
-
-@app.route("/gem-auth.js")
-def gem_auth_js():
-    return send_from_directory(FRONTEND_DIR, "gem-auth.js", mimetype="application/javascript")
-
-
-@app.route("/doctor")
-@login_required("doctor")
-def doctor_page():
-    return send_from_directory(FRONTEND_DIR, "doctor.html")
-
+# /login, /doctor and /account-bar.js are served by auth_db.py.
 
 @app.route("/")
 @login_required()
@@ -365,7 +370,7 @@ def home():
         return redirect("/doctor")
     with open(os.path.join(FRONTEND_DIR, "gem.html"), encoding="utf-8") as f:
         page = f.read()
-    tags = ('<script src="/cognitive.js" defer></script>\n<script src="/gem-auth.js" defer></script>\n'
+    tags = ('<script src="/cognitive.js" defer></script>\n<script src="/account-bar.js" defer></script>\n'
             '<script src="/rehab-modes.js" defer></script>')
     idx = page.lower().rfind("</body>")
     page = page[:idx] + tags + page[idx:] if idx != -1 else page + tags
@@ -388,7 +393,7 @@ def cognitive_js():
 @login_required()
 def video_feed():
     def generate():
-        while True:
+        while not camera_stop.is_set():
             with lock:
                 frame = latest_frame
             if frame is None:
@@ -401,14 +406,27 @@ def video_feed():
 
 
 # --------------------------------------------------
-# API ROUTES (PHYSICAL MODEL — UNCHANGED)
+# API ROUTES
 # --------------------------------------------------
 
 @app.route("/api/camera/start", methods=["POST"])
 @login_required()
 def api_camera_start():
+    """Starts the camera thread and answers once the camera really works (or has failed)."""
     start_camera()
-    return jsonify({"success": True})
+    deadline = time.time() + CAMERA_START_TIMEOUT_SEC
+    while time.time() < deadline:
+        with lock:
+            if tracking["camera_connected"]:
+                return jsonify({"success": True})
+        if not (camera_thread and camera_thread.is_alive()):
+            break
+        time.sleep(0.1)
+    with lock:
+        message = tracking["feedback"]
+    if camera_thread and camera_thread.is_alive():
+        message = "The camera is still starting. Try again in a few seconds."
+    return jsonify({"success": False, "error": message}), 503
 
 
 @app.route("/api/camera/stop", methods=["POST"])
@@ -476,6 +494,8 @@ def api_session_stop():
     global analyzer, session_owner
     body = request.get_json(silent=True) or {}
     reason = body.get("reason", "manual")
+    if reason not in ("manual", "pain", "completed"):
+        reason = "manual"
 
     with lock:
         tracking["running"] = False
@@ -498,11 +518,6 @@ def api_session_stop():
         analyzer, session_owner = None, None
 
     session_id = save_session_to_db(owner, summary)
-
-    os.makedirs(SESSION_DIR, exist_ok=True)
-    path = os.path.join(SESSION_DIR, f"session_{time.strftime('%Y%m%d_%H%M%S')}.json")
-    with open(path, "w") as f:
-        json.dump(summary, f, indent=2)
 
     return jsonify({
         "success": True,
@@ -617,10 +632,42 @@ def api_dual_stop():
         tracking["dual_active"] = False
 
     session_id = save_session_to_db(owner, summary)
-    os.makedirs(SESSION_DIR, exist_ok=True)
-    with open(os.path.join(SESSION_DIR, f"session_{time.strftime('%Y%m%d_%H%M%S')}_dual.json"), "w") as f:
-        json.dump(summary, f, indent=2)
     return jsonify({"success": True, "session_id": session_id, "summary": summary})
+
+
+# --------------------------------------------------
+# COGNITIVE GAMES (run in the browser; the result is saved here)
+# --------------------------------------------------
+
+COGNITIVE_GAMES = {"logic": "cognitive_logic", "memory": "cognitive_memory"}
+
+
+@app.route("/api/cognitive/result", methods=["POST"])
+@login_required("patient")
+def api_cognitive_result():
+    body = request.get_json(silent=True) or {}
+    game = body.get("game")
+    if game not in COGNITIVE_GAMES:
+        return jsonify({"success": False, "error": "game must be 'logic' or 'memory'."}), 400
+    try:
+        correct, total = int(body.get("correct", 0)), int(body.get("total", 0))
+        seconds = float(body.get("seconds") or 0)
+        avg_sec = None if body.get("avg_sec") in (None, "") else float(body["avg_sec"])
+    except (TypeError, ValueError):
+        return jsonify({"success": False, "error": "correct, total and seconds must be numbers."}), 400
+    if not 0 <= correct <= total <= 100:
+        return jsonify({"success": False, "error": "correct must be between 0 and total."}), 400
+    summary = {
+        "exercise": COGNITIVE_GAMES[game], "ui_exercise": "cognitive", "side": None,
+        "prescription": {"reps": total}, "reps": correct, "partial_reps": total - correct, "out_of_range": 0,
+        "accuracy_pct": round(100 * correct / total, 1) if total else None,
+        "avg_answer_sec": avg_sec, "duration_sec": round(seconds, 1), "active_sec": round(seconds, 1),
+        "input": "mouse" if body.get("input") == "mouse" else "camera",
+        "skills": body.get("skills") if isinstance(body.get("skills"), dict) else None,
+        "pain": False, "completed": True, "ended_by": "completed",      # saved only when every round was played
+        "saved_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
+    }
+    return jsonify({"success": True, "session_id": save_session_to_db(current_user()["id"], summary)})
 
 
 @app.route("/api/tracking")
@@ -632,6 +679,6 @@ def api_tracking():
 
 
 if __name__ == "__main__":
-    print("GEM backend starting...")
+    print("ability+ is starting...")
     print("Open http://127.0.0.1:5000/login in your browser.")
     app.run(host="127.0.0.1", port=5000, debug=False, threaded=True, use_reloader=False)

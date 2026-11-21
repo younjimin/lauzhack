@@ -1,7 +1,7 @@
 """
-auth_db.py — login, SQL storage and patient <-> physiotherapist data exchange.
+auth_db.py — ability+ login, SQL storage and patient <-> physiotherapist data exchange.
 
-Storage: SQLite (Python standard library, one file: instance/gem.db).
+Storage: SQLite (Python standard library, one file: instance/abilityplus.db).
 All queries are plain SQL with parameters, so moving to PostgreSQL/MySQL later
 means changing get_db() and a few type names in SCHEMA.
 
@@ -13,7 +13,7 @@ Roles
   doctor   (physiotherapist) links patients, sets prescriptions, reviews sessions, sends notes
 
 Environment
-  GEM_DB          database file            (default instance/gem.db)
+  GEM_DB          database file            (default instance/abilityplus.db)
   GEM_SECRET_KEY  cookie signing key       (default: generated once, saved in instance/secret_key)
   GEM_DEMO=0      do not create the demo accounts on an empty database
 """
@@ -32,8 +32,8 @@ FRONTEND_DIR = os.path.join(BASE_DIR, "frontend")
 INSTANCE_DIR = os.path.join(BASE_DIR, "instance")
 
 DEMO_PASSWORD = "demo1234"
-DEMO_DOCTOR = ("doctor@demo.gem", "Dr. Lea Martin")
-DEMO_PATIENT = ("patient@demo.gem", "Alex Morgan")
+DEMO_DOCTOR = ("doctor@abilityplus.demo", "Dr. Lea Martin")
+DEMO_PATIENT = ("patient@abilityplus.demo", "Alex Morgan")
 MIN_PASSWORD_LEN = 8
 MAX_MESSAGE_LEN = 2000
 
@@ -112,7 +112,7 @@ _validate = None          # fn(rx) -> complete rx, raises ValueError if invalid
 # --------------------------------------------------
 
 def db_path():
-    return os.environ.get("GEM_DB", os.path.join(INSTANCE_DIR, "gem.db"))
+    return os.environ.get("GEM_DB", os.path.join(INSTANCE_DIR, "abilityplus.db"))
 
 
 def get_db():
@@ -300,7 +300,12 @@ def _list_sessions(patient_id, limit=50):
             summary = json.loads(d.pop("summary_json") or "{}")
         except ValueError:
             summary = {}
+        d["active_sec"] = summary.get("active_sec")
         d["breaks"] = len(summary.get("breaks") or [])          # breathing breaks during the session
+        fm = summary.get("finger_metrics")                       # finger opposition details (compact)
+        d["finger"] = None if not fm else {k: fm.get(k) for k in
+                                           ("avg_touch_sec", "consistency_pct", "missed_touches", "hardest_finger")}
+        d["input"] = summary.get("input")                        # cognitive games: "camera" | "mouse"
         dt = summary.get("dual_task")                            # dual-task mode results (compact)
         d["dual"] = None if not dt else {
             "baseline_in_zone_pct": (dt.get("baseline") or {}).get("in_zone_pct"),
@@ -349,9 +354,9 @@ def doctor_page():
     return send_from_directory(FRONTEND_DIR, "doctor.html")
 
 
-@bp.route("/gem-auth.js")
-def gem_auth_js():
-    return send_from_directory(FRONTEND_DIR, "gem-auth.js", mimetype="application/javascript")
+@bp.route("/account-bar.js")
+def account_bar_js():
+    return send_from_directory(FRONTEND_DIR, "account-bar.js", mimetype="application/javascript")
 
 
 # --------------------------------------------------
@@ -492,6 +497,8 @@ def _require_patient(pid):
         return None, _bad("This patient is not on your list.", 404)
     row = get_db().execute("SELECT id, name, email, created_at FROM users WHERE id = ? AND role = 'patient'",
                            (pid,)).fetchone()
+    if row is None:
+        return None, _bad("This patient account no longer exists.", 404)
     return dict(row), None
 
 
@@ -619,4 +626,4 @@ def api_doctor_export(pid):
                "note": "Prototype data. Angles are webcam estimates, not clinical measurements.",
                "sessions": sessions_out}
     return Response(json.dumps(payload, indent=2), mimetype="application/json",
-                    headers={"Content-Disposition": f"attachment; filename=gem-patient-{pid}.json"})
+                    headers={"Content-Disposition": f"attachment; filename=abilityplus-patient-{pid}.json"})

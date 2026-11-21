@@ -1,5 +1,5 @@
 """
-analyzer.py — Rehab Assistant, Step 2 (exercise logic).
+analyzer.py — ability+ exercise logic (Step 2).
 
 Turns Step 1's tracking data (PoseDetector.process_frame output) into
 angle / finger sequence → smoothing → visibility check → rep counting → safe-range check →
@@ -58,7 +58,7 @@ EXERCISES: dict[str, dict[str, Any]] = {
         "messages": {"raise": "Slowly bend your elbow a bit more",
                      "lower": "Good! Now slowly straighten your arm",
                      "partial": "Nearly there - bend a little further next time",
-                     "stop": "Stop - do not bend past 90 degrees",
+                     "stop": "Stop - do not bend past {safe_limit} degrees",
                      "rest_first": "Start with your arm straight"},
     },
     "finger_tap": {
@@ -466,7 +466,8 @@ class RehabAnalyzer:
             return
         held = t - m["since"] >= self.o["message_hold_sec"] * 1000
         if MSG_PRIO[key] > m["prio"] or held or m["key"] is None:
-            self.s["msg"] = {"key": key, "text": _msg_text(key, self.ex), "prio": MSG_PRIO[key], "since": t}
+            text = _msg_text(key, self.ex).replace("{safe_limit}", str(round(self.rx["safe_limit"])))
+            self.s["msg"] = {"key": key, "text": text, "prio": MSG_PRIO[key], "since": t}
 
     def _result(self, status: str, t, events):
         s, rx, d = self.s, self.rx, self._display
@@ -632,10 +633,10 @@ class RehabAnalyzer:
                 seq["per_finger"][target_finger]["misses"] += 1
                 seq["per_finger"][target_finger]["min_gaps"].append(_r1(seq["min_target_gap"]))
                 s["partial_reps"] = seq["missed_touches"]
+                self._emit(events, {"type": "partial_rep", "t": t, "finger": target_finger, "min_gap": _r1(seq["min_target_gap"])})
                 seq["attempted"] = False
                 seq["move_start_t"] = None
                 seq["min_target_gap"] = 180.0
-                self._emit(events, {"type": "partial_rep", "t": t, "finger": target_finger, "min_gap": _r1(seq["min_target_gap"])})
                 seq["custom_msg"] = f"Missed touch — bring thumb all the way to {target_finger.upper()}"
             else:
                 if closest_other_gap > touch_th + 6:

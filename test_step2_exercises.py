@@ -1,6 +1,6 @@
 """
 test_step2_exercises.py — pure-Python tests for the exercises used by the web app
-(elbow_curl and finger_tap), the left/right mirroring rules and the Flask API
+(elbow_curl, finger_tap), the left/right mirroring rules and the Flask API
 (login, SQL storage, prescriptions, sessions, review notes, messages).
 
     python test_step2_exercises.py
@@ -153,7 +153,6 @@ try:
     os.environ["GEM_DB"] = os.path.join(tmp, "test.db")
     os.environ["GEM_DEMO"] = "0"
     import main as app_module
-    app_module.SESSION_DIR = os.path.join(tmp, "sessions")
 
     patient = app_module.app.test_client()
     doctor = app_module.app.test_client()
@@ -174,7 +173,7 @@ try:
     did = reg_d.get_json()["user"]["id"]
     check("8. Login: pages/API locked, register, duplicate/short rejected, wrong password 401, gem.html gets account bar",
           page_redirect and api_locked and reg_p.status_code == 200 and reg_d.status_code == 200 and dup == 409
-          and short == 400 and wrong == 401 and good == 200 and "/gem-auth.js" in page
+          and short == 400 and wrong == 401 and good == 200 and "/account-bar.js" in page
           and doctor.get("/").headers["Location"].endswith("/doctor"),
           f"redirect={page_redirect} locked={api_locked} dup={dup} short={short} wrong={wrong} good={good}")
 

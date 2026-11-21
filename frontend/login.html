@@ -3,77 +3,104 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GEM — Sign in</title>
+  <title>ability+ · Sign in</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
   <style>
-    :root { --bg:#f4f7f6; --ink:#19332f; --muted:#6b7b77; --line:#e1eae6; --green:#167b69; --soft:#e8f4ef; --red:#d9534f; --orange:#f4a261; }
+    :root {
+      --paper: #f4f7f6; --surface: #FFFFFF; --ink: #19332f; --ink-2: #5f6f6a; --rule: #e1eae6;
+      --brand: #167b69; --brand-wash: #e8f4ef; --danger: #C2362F; --focus: #F2A93B;
+    }
     * { box-sizing: border-box; }
-    body { margin:0; min-height:100vh; display:grid; place-items:center; background:var(--bg); color:var(--ink);
-           font:15px/1.5 Inter, system-ui, Arial, sans-serif; padding:20px; }
-    .wrap { width:100%; max-width:420px; }
-    .brand { font-weight:800; font-size:26px; letter-spacing:1px; text-align:center; margin-bottom:6px; }
-    .brand span { color:var(--green); }
-    .tagline { text-align:center; color:var(--muted); margin-bottom:22px; }
-    .card { background:#fff; border:1px solid var(--line); border-radius:16px; padding:24px; }
-    .tabs { display:flex; background:#edf3f0; border-radius:10px; padding:4px; margin-bottom:18px; }
-    .tabs button { flex:1; border:0; background:transparent; padding:9px; border-radius:8px; font:inherit; font-weight:700; color:var(--muted); cursor:pointer; }
-    .tabs button.active { background:#fff; color:var(--green); box-shadow:0 1px 3px rgba(0,0,0,.06); }
-    label { display:block; font-size:12px; font-weight:700; color:var(--muted); margin:12px 0 4px; }
-    input, select { width:100%; font:inherit; padding:11px 12px; border:1px solid var(--line); border-radius:9px; background:#fff; color:var(--ink); }
-    input:focus-visible, select:focus-visible, button:focus-visible { outline:3px solid var(--orange); outline-offset:2px; }
-    .roles { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
-    .roles label { margin:0; display:flex; gap:8px; align-items:center; border:1px solid var(--line); border-radius:9px; padding:10px; cursor:pointer; color:var(--ink); font-size:14px; }
-    .roles input { width:auto; }
-    .roles label:has(input:checked) { border-color:var(--green); background:var(--soft); }
-    .submit { width:100%; margin-top:18px; border:0; border-radius:9px; padding:12px; background:var(--green); color:#fff; font:inherit; font-weight:700; cursor:pointer; }
-    .submit:disabled { opacity:.6; cursor:wait; }
-    .error { color:var(--red); font-size:13px; min-height:20px; margin-top:10px; }
-    .demo { margin-top:16px; background:var(--soft); border-radius:10px; padding:12px; font-size:13px; }
-    .demo button { border:0; background:#fff; border-radius:7px; padding:6px 10px; margin:6px 6px 0 0; font:inherit; font-size:13px; font-weight:650; color:var(--green); cursor:pointer; }
-    .note { text-align:center; color:var(--muted); font-size:12px; margin-top:16px; }
-    [hidden] { display:none !important; }
+    body { margin: 0; min-height: 100vh; background: var(--paper); color: var(--ink);
+           font: 17px/1.55 "Atkinson Hyperlegible", system-ui, sans-serif;
+           display: grid; place-items: center; padding: 32px 20px; }
+    :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+    .wrap { width: 100%; max-width: 440px; }
+    .wordmark { font-weight: 700; font-size: 24px; letter-spacing: -0.02em; display: inline-flex; align-items: center; gap: 3px; }
+    .wordmark .plus { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 5px;
+                      background: var(--brand); color: #fff; font-size: 19px; line-height: 1; transform: translateY(1px); }
+    h1 { font-size: 38px; line-height: 1.1; letter-spacing: -0.02em; margin: 28px 0 10px; }
+    .lead { color: var(--ink-2); margin: 0 0 28px; }
+
+    .card { background: var(--surface); border: 1px solid var(--rule); border-radius: 12px; padding: 26px; }
+    .card h2 { font-size: 22px; margin: 0 0 4px; }
+    .card .sub { color: var(--ink-2); margin: 0 0 6px; font-size: 15px; }
+
+    label { display: block; font-weight: 700; font-size: 15px; margin: 16px 0 6px; }
+    input[type=email], input[type=password], input[type=text] {
+      width: 100%; font: inherit; padding: 11px 12px; border: 1.5px solid var(--rule); border-radius: 6px; background: #fff; color: var(--ink); }
+    input:focus { border-color: var(--brand); }
+    fieldset { border: 0; padding: 0; margin: 16px 0 0; }
+    legend { font-weight: 700; font-size: 15px; margin-bottom: 6px; padding: 0; }
+    .roles { display: grid; grid-template-columns: 1fr 1fr; border: 1.5px solid var(--rule); border-radius: 6px; overflow: hidden; }
+    .roles label { margin: 0; padding: 10px; text-align: center; font-weight: 400; cursor: pointer; }
+    .roles label + label { border-left: 1.5px solid var(--rule); }
+    .roles input { position: absolute; opacity: 0; }
+    .roles label:has(input:checked) { background: var(--brand-wash); color: var(--brand); font-weight: 700; }
+    .roles label:has(input:focus-visible) { outline: 3px solid var(--focus); outline-offset: -3px; }
+
+    .submit { width: 100%; margin-top: 22px; border: 0; border-radius: 6px; padding: 13px; background: var(--brand); color: #fff;
+              font: inherit; font-weight: 700; cursor: pointer; }
+    .submit:hover { background: #115e50; }
+    .submit:disabled { opacity: .6; cursor: wait; }
+    .error { color: var(--danger); font-size: 15px; min-height: 22px; margin: 10px 0 0; }
+    .switch { margin-top: 14px; font-size: 15px; color: var(--ink-2); }
+    .switch button { border: 0; background: none; padding: 0; font: inherit; color: var(--brand); text-decoration: underline; cursor: pointer; }
+
+    .demo { margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--rule); font-size: 15px; color: var(--ink-2); }
+    .demo p { margin: 0 0 8px; }
+    .demo button { display: block; width: 100%; text-align: left; border: 1.5px solid var(--rule); background: #fff; border-radius: 6px;
+                   padding: 9px 12px; margin-top: 6px; font: inherit; color: var(--ink); cursor: pointer; }
+    .demo button:hover { border-color: var(--brand); }
+    [hidden] { display: none !important; }
+    @media (max-width: 480px) { h1 { font-size: 31px; } .card { padding: 20px; } }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="brand">✚ <span>GEM</span></div>
-    <div class="tagline">Home rehabilitation, guided by your physiotherapist</div>
+<div class="wrap">
+  <div class="wordmark" aria-label="ability plus">ability<span class="plus" aria-hidden="true">+</span></div>
+  <h1>Rehab that reaches every home.</h1>
+  <p class="lead">For people who can't get to a clinic: guided exercises with any webcam, followed remotely by a physiotherapist.</p>
 
-    <div class="card">
-      <div class="tabs" role="tablist">
-        <button class="active" id="tab-login" role="tab" aria-selected="true">Sign in</button>
-        <button id="tab-register" role="tab" aria-selected="false">Create account</button>
-      </div>
+  <section class="card">
+    <h2 id="heading">Sign in</h2>
+    <p class="sub" id="subheading">Use the email your physiotherapist has on file.</p>
 
-      <form id="form" novalidate>
-        <div id="register-fields" hidden>
-          <label>I am a…</label>
+    <form id="form" novalidate>
+      <div id="register-fields" hidden>
+        <fieldset>
+          <legend>I am a</legend>
           <div class="roles">
-            <label><input type="radio" name="role" value="patient" checked> Patient</label>
-            <label><input type="radio" name="role" value="doctor"> Physiotherapist</label>
+            <label><input type="radio" name="role" value="patient" checked>Patient</label>
+            <label><input type="radio" name="role" value="doctor">Physiotherapist</label>
           </div>
-          <label for="name">Full name</label>
-          <input id="name" autocomplete="name">
-        </div>
-
-        <label for="email">Email</label>
-        <input id="email" type="email" autocomplete="email" required>
-
-        <label for="password">Password</label>
-        <input id="password" type="password" autocomplete="current-password" required>
-
-        <button class="submit" id="submit" type="submit">Sign in</button>
-        <div class="error" id="error" role="alert"></div>
-      </form>
-
-      <div class="demo" id="demo" hidden>
-        <b>Demo accounts</b> (password <code>demo1234</code>)<br>
-        <button type="button" data-email="patient@demo.gem">Patient: Alex Morgan</button>
-        <button type="button" data-email="doctor@demo.gem">Physio: Dr. Lea Martin</button>
+        </fieldset>
+        <label for="name">Full name</label>
+        <input id="name" type="text" autocomplete="name">
       </div>
-    </div>
 
-    <div class="note">Prototype · video is processed on this computer and never uploaded</div>
-  </div>
+      <label for="email">Email</label>
+      <input id="email" type="email" autocomplete="email" required>
+
+      <label for="password">Password</label>
+      <input id="password" type="password" autocomplete="current-password" required>
+
+      <button class="submit" id="submit" type="submit">Sign in</button>
+      <p class="error" id="error" role="alert"></p>
+    </form>
+
+    <div class="switch" id="switch-line">No account yet? <button type="button" id="switch">Create one</button></div>
+
+    <div class="demo" id="demo" hidden>
+      <p>Demo accounts, password <b>demo1234</b>:</p>
+      <button type="button" data-email="patient@abilityplus.demo"><b>Alex Morgan</b>, patient</button>
+      <button type="button" data-email="doctor@abilityplus.demo"><b>Dr. Lea Martin</b>, physiotherapist</button>
+    </div>
+  </section>
+</div>
 
 <script>
   const $ = id => document.getElementById(id);
@@ -81,17 +108,17 @@
 
   function setMode(m) {
     mode = m;
-    $('tab-login').classList.toggle('active', m === 'login');
-    $('tab-register').classList.toggle('active', m === 'register');
-    $('tab-login').setAttribute('aria-selected', m === 'login');
-    $('tab-register').setAttribute('aria-selected', m === 'register');
-    $('register-fields').hidden = m !== 'register';
-    $('submit').textContent = m === 'login' ? 'Sign in' : 'Create account';
-    $('password').autocomplete = m === 'login' ? 'current-password' : 'new-password';
+    const reg = m === 'register';
+    $('register-fields').hidden = !reg;
+    $('heading').textContent = reg ? 'Create an account' : 'Sign in';
+    $('subheading').textContent = reg ? 'Patients and physiotherapists both start here.' : 'Use the email your physiotherapist has on file.';
+    $('submit').textContent = reg ? 'Create account' : 'Sign in';
+    $('switch-line').firstChild.textContent = reg ? 'Already have an account? ' : 'No account yet? ';
+    $('switch').textContent = reg ? 'Sign in' : 'Create one';
+    $('password').autocomplete = reg ? 'new-password' : 'current-password';
     $('error').textContent = '';
   }
-  $('tab-login').onclick = () => setMode('login');
-  $('tab-register').onclick = () => setMode('register');
+  $('switch').onclick = () => setMode(mode === 'login' ? 'register' : 'login');
 
   async function post(url, body) {
     const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });

@@ -1,11 +1,10 @@
 /**
- * cognitive.js — GEM Cognitive Rehabilitation Module
+ * cognitive.js — ability+ thinking games
  *
- * Features:
- *  1. Mode Chooser right after sign-in: Physical Model vs. Cognitive Model
- *  2. Compact Dropdown Selectors ("Choose Game" & "Choose Control") showing only the active choice:
- *       - Game: Logical Reasoning (Odd One Out) OR Working Memory (Sequence Grid Recall)
- *       - Control: Camera (4-Way Head Tilt/Nod + 5.0s Hold) OR Mouse / Click
+ *  1. Training-type chooser shown after sign-in: movement, thinking, or both at once (dual-task).
+ *  2. Thinking games: odd one out (logic) or memory sequence, answered with head movements
+ *     (tilt or nod and hold 5 s, browser camera) or the mouse.
+ *  Results are saved to the patient's account (/api/cognitive/result) so the physiotherapist sees them.
  */
 (() => {
   // --------------------------------------------------
@@ -170,7 +169,7 @@
       position: fixed;
       inset: 0;
       z-index: 9999;
-      background: rgba(244, 247, 246, 0.98);
+      background: #f4f7f6;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -182,13 +181,12 @@
       width: 100%;
       background: #fff;
       border: 1px solid #e1eae6;
-      border-radius: 20px;
+      border-radius: 12px;
       padding: 36px;
-      box-shadow: 0 18px 45px rgba(25, 51, 47, 0.08);
     }
     .mode-cards {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 20px;
       margin-top: 24px;
     }
@@ -197,23 +195,17 @@
       border-radius: 16px;
       padding: 24px;
       text-align: left;
-      background: #fbfdfc;
+      background: #FFFFFF;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
       gap: 16px;
-      transition: border-color .18s ease, transform .12s ease, box-shadow .18s ease;
     }
-    .mode-card:hover {
-      border-color: #167b69;
-      transform: translateY(-2px);
-      box-shadow: 0 10px 24px rgba(22, 123, 105, 0.12);
-    }
-    .mode-card h3 { margin: 8px 0 6px; font-size: 20px; color: #19332f; }
-    .mode-icon {
-      width: 52px; height: 52px; border-radius: 14px;
-      background: #e8f4ef; display: grid; place-items: center; font-size: 26px;
-    }
+    .mode-card:hover { border-color: #167b69; }
+    .mode-card h3 { margin: 12px 0 4px; font-size: 22px; color: #19332f; }
+    .mode-card p { margin: 0; }
+    .mode-icon { width: 52px; height: 52px; border-radius: 12px; background: #e8f4ef;
+      display: grid; place-items: center; font-size: 28px; }
     .cog-layout {
       display: grid;
       grid-template-columns: 1.55fr 1fr;
@@ -258,22 +250,22 @@
       transform: scale(1.01);
     }
     .cog-option.holding {
-      border-color: #e67e22;
-      box-shadow: 0 0 0 3px rgba(230, 126, 34, 0.28);
+      border-color: #E08A1E;
+      box-shadow: 0 0 0 3px rgba(224, 138, 30, 0.28);
     }
     .cog-option.flash-seq {
-      border-color: #0284c7;
-      background: #e0f2fe;
-      box-shadow: 0 0 0 4px rgba(2, 132, 199, 0.35);
+      border-color: #167b69;
+      background: #e8f4ef;
+      box-shadow: 0 0 0 4px rgba(22, 123, 105, 0.35);
       transform: scale(1.03);
     }
     .cog-option.correct {
-      border-color: #0f5132;
-      background: #d1f2e6;
+      border-color: #1F7A4D;
+      background: #E5F3EC;
     }
     .cog-option.wrong {
-      border-color: #d9534f;
-      background: #fbe3e1;
+      border-color: #C2362F;
+      background: #FBEDEC;
     }
     .cog-hold-track {
       width: 100%;
@@ -289,7 +281,7 @@
     .cog-hold-fill {
       height: 100%;
       width: 0%;
-      background: #e67e22;
+      background: #E08A1E;
       transition: width 0.08s linear;
     }
     .cog-opt-icon {
@@ -310,7 +302,7 @@
       aspect-ratio: 4 / 3;
       display: grid;
       place-items: center;
-      color: #d9e8e2;
+      color: #e1eae6;
     }
     .cog-cam-wrap video, .cog-cam-wrap canvas {
       position: absolute;
@@ -337,12 +329,7 @@
       width: 50%;
       transition: width .08s linear;
     }
-    .skill-pills {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      margin: 10px 0;
-    }
+    .skill-pills { margin: 8px 0; font-size: 14px; }
     .cog-toolbar-row {
       display: flex;
       gap: 12px;
@@ -369,7 +356,7 @@
       cursor: pointer;
     }
     .cog-dropdown-trigger small {
-      color: #71817d;
+      color: #5f6f6a;
       font-weight: 600;
     }
     .cog-dropdown-menu {
@@ -420,33 +407,35 @@
   modeGate.id = "mode-gate";
   modeGate.innerHTML = `
     <div class="mode-box">
-      <div class="eyebrow">GEM ADAPTIVE REHABILITATION PLATFORM</div>
-      <h1 style="margin:6px 0 8px">Choose Your Training Model</h1>
-      <p class="muted" style="margin:0">
-        Select whether you want to practice physical motor exercises or cognitive reasoning and memory exercises.
-      </p>
+      <h1 style="margin:0 0 6px">What do you want to train today?</h1>
+      <p class="muted" style="margin:0">You can switch any time from the menu.</p>
 
       <div class="mode-cards">
         <div class="mode-card">
           <div>
-            <div class="mode-icon">💪</div>
-            <h3>Physical Rehabilitation</h3>
-            <p class="muted">
-              Camera-guided upper-limb and fine-motor exercises including <b>Arm Curl</b> and <b>Sequential Finger Opposition</b> with real-time range-of-motion tracking.
-            </p>
+            <div class="mode-icon" aria-hidden="true">💪</div>
+            <h3>Movement</h3>
+            <p class="muted">Arm and finger exercises, counted by the camera.</p>
           </div>
-          <button class="primary" id="choose-physical">Enter Physical Model →</button>
+          <button class="primary" id="choose-physical" aria-label="Start movement exercises">Start</button>
         </div>
 
         <div class="mode-card">
           <div>
-            <div class="mode-icon">🧠</div>
-            <h3>Cognitive Rehabilitation</h3>
-            <p class="muted">
-              AI-assisted cognitive training for <b>Logical Reasoning</b> and <b>Working Memory</b> — operated hands-free with facial movements or with a mouse.
-            </p>
+            <div class="mode-icon" aria-hidden="true">🧠</div>
+            <h3>Thinking</h3>
+            <p class="muted">Puzzles and memory games, hands-free.</p>
           </div>
-          <button class="primary" id="choose-cognitive">Enter Cognitive Model →</button>
+          <button class="primary" id="choose-cognitive" aria-label="Start thinking games">Start</button>
+        </div>
+
+        <div class="mode-card">
+          <div>
+            <div class="mode-icon" aria-hidden="true">🤹</div>
+            <h3>Both at once</h3>
+            <p class="muted">Hold a position while answering questions.</p>
+          </div>
+          <button class="primary" id="choose-dual" aria-label="Start dual-task training">Start</button>
         </div>
       </div>
     </div>
@@ -460,22 +449,14 @@
   const main = document.querySelector("main");
 
   if (sidebar && main) {
-    const switchWrap = document.createElement("div");
-    switchWrap.style.marginTop = "14px";
-    switchWrap.innerHTML = `
-      <button id="switch-mode-btn" style="width:100%;text-align:left;background:#e8f4ef;color:#167b69">
-        ⇄ Switch training model
-      </button>
-    `;
+    // The "Thinking" menu item is in gem.html; create it only if it is missing.
     const firstNav = sidebar.querySelector("nav");
-    if (firstNav) {
-      firstNav.parentNode.insertBefore(switchWrap, firstNav);
+    if (!sidebar.querySelector('[data-page="cognitive"]') && firstNav) {
+      const cogNavBtn = document.createElement("button");
+      cogNavBtn.dataset.page = "cognitive";
+      cogNavBtn.textContent = "🧠 Thinking";
+      firstNav.appendChild(cogNavBtn);
     }
-
-    const cogNavBtn = document.createElement("button");
-    cogNavBtn.dataset.page = "cognitive";
-    cogNavBtn.textContent = "🧠 Cognitive training";
-    if (firstNav) firstNav.appendChild(cogNavBtn);
 
     const cogSection = document.createElement("section");
     cogSection.className = "page";
@@ -483,47 +464,42 @@
     cogSection.innerHTML = `
       <div class="hero">
         <div>
-          <div class="eyebrow">AI-ASSISTED COGNITIVE REHABILITATION</div>
-          <h2 id="cog-hero-title">Logical Reasoning — Odd One Out</h2>
+          <h2 id="cog-hero-title">Odd one out</h2>
           <div class="muted" id="cog-hero-desc">
-            Find differences, classify objects, and identify which item doesn't belong.
+            Four items appear. Pick the one that does not belong with the others.
           </div>
-          <div class="skill-pills" id="cog-skill-pills">
-            <span class="tag">✓ Categorisation</span>
-            <span class="tag">✓ Analytical Thinking</span>
-            <span class="tag">✓ Problem-Solving</span>
-          </div>
+          <div class="skill-pills muted" id="cog-skill-pills">Practises categorisation, analytical thinking and problem-solving.</div>
 
           <!-- Compact Dropdowns: Only show the active chosen game & control -->
           <div class="cog-toolbar-row">
             <div class="cog-dropdown" id="game-dropdown">
               <button type="button" class="cog-dropdown-trigger" id="game-dropdown-btn" aria-expanded="false">
-                <small>Choose game:</small>
-                <span id="game-current-label">🧩 Logical Reasoning</span>
+                <small>Game</small>
+                <span id="game-current-label">Odd one out</span>
                 <span>▾</span>
               </button>
               <div class="cog-dropdown-menu" id="game-dropdown-menu" hidden>
                 <button type="button" class="cog-dropdown-item selected" data-game-choice="logic">
-                  🧩 Logical Reasoning (Odd One Out)
+                  Odd one out
                 </button>
                 <button type="button" class="cog-dropdown-item" data-game-choice="memory">
-                  🧠 Memory Pattern (Sequence Grid)
+                  Memory sequence
                 </button>
               </div>
             </div>
 
             <div class="cog-dropdown" id="control-dropdown">
               <button type="button" class="cog-dropdown-trigger" id="control-dropdown-btn" aria-expanded="false">
-                <small>Control:</small>
-                <span id="control-current-label">📷 Camera (Head Tilt)</span>
+                <small>Answer with</small>
+                <span id="control-current-label">Head movements</span>
                 <span>▾</span>
               </button>
               <div class="cog-dropdown-menu" id="control-dropdown-menu" hidden>
                 <button type="button" class="cog-dropdown-item selected" data-control-choice="camera">
-                  📷 Camera (4-Way Head Tilt + 5s Hold)
+                  Head movements (tilt and hold 5 s)
                 </button>
                 <button type="button" class="cog-dropdown-item" data-control-choice="mouse">
-                  🖱️ Mouse / Click
+                  Mouse
                 </button>
               </div>
             </div>
@@ -531,32 +507,32 @@
         </div>
 
         <div class="controls">
-          <button class="primary" id="cog-start-cam">📷 Enable Camera Sensor</button>
-          <button id="cog-recenter-btn" style="display:none">⌖ Recenter Head</button>
-          <button id="cog-start-session">▶ Start Exercise</button>
+          <button class="primary" id="cog-start-cam">Turn on camera</button>
+          <button id="cog-recenter-btn" style="display:none">Reset centre</button>
+          <button id="cog-start-session">Start</button>
         </div>
       </div>
 
       <div class="grid">
         <div class="card">
-          <div class="metric-label">ROUND PROGRESS</div>
+          <div class="metric-label">Round</div>
           <div class="metric" id="cog-progress">0 / 10</div>
           <small class="muted" id="cog-skill-tag">Skill: Categorisation</small>
         </div>
         <div class="card">
-          <div class="metric-label">ACCURACY</div>
+          <div class="metric-label">Correct</div>
           <div class="metric" id="cog-accuracy">—</div>
-          <small class="muted" id="cog-acc-sub">Correct answers</small>
+          <small class="muted" id="cog-acc-sub">Share of answers</small>
         </div>
         <div class="card">
-          <div class="metric-label">AVG DECISION TIME</div>
+          <div class="metric-label">Time per answer</div>
           <div class="metric" id="cog-speed">—</div>
-          <small class="muted">Seconds per step</small>
+          <small class="muted">Average</small>
         </div>
         <div class="card">
-          <div class="metric-label">SELECTION PROGRESS</div>
-          <div class="metric" id="cog-gesture-state">Standby</div>
-          <small class="muted" id="cog-gesture-sub">Tilt Up/Down/Left/Right &amp; hold 5.0s</small>
+          <div class="metric-label">Selection</div>
+          <div class="metric" id="cog-gesture-state">Waiting</div>
+          <small class="muted" id="cog-gesture-sub">Tilt your head and hold for 5 s</small>
         </div>
       </div>
 
@@ -564,49 +540,47 @@
         <div class="card">
           <div class="session-header">
             <div>
-              <div class="eyebrow" id="cog-q-eyebrow">COGNITIVE CHALLENGE</div>
-              <h2 id="cog-q-prompt" style="margin-top:4px">Press "Start Exercise" to begin</h2>
+              <div class="muted" id="cog-q-eyebrow"></div>
+              <h2 id="cog-q-prompt" style="margin-top:4px">Press "Start" to begin</h2>
             </div>
-            <span class="tag" id="cog-focus-badge">Option 1 highlighted</span>
+            <span class="tag" id="cog-focus-badge">Highlighted: first item</span>
           </div>
 
           <div class="cog-options" id="cog-options"></div>
 
           <div class="feedback" id="cog-feedback" aria-live="polite">
-            💡 <b>Camera Controls:</b> Tilt or nod your head <b>Up, Down, Left, or Right</b> to highlight an option, then <b>keep your head in that position for 5 seconds</b> to confirm.
+            Tilt or nod your head up, down, left or right to move the highlight. Keep it there for 5 seconds to choose.
           </div>
 
           <div class="summary-card" id="cog-summary-card">
             <div class="session-header">
               <div>
-                <div class="eyebrow">COGNITIVE SESSION REPORT</div>
-                <h2 style="margin:4px 0 0" id="cog-summary-title">Session Complete</h2>
+                <h2 style="margin:4px 0 0" id="cog-summary-title">Done</h2>
               </div>
-              <span class="tag">✓ Saved</span>
+              <span class="tag" id="cog-saved-tag">Saving…</span>
             </div>
             <div class="summary-grid" id="cog-summary-grid"></div>
           </div>
         </div>
 
         <div class="card" id="cog-camera-panel">
-          <h2>4-Way Head-Tilt Movement Sensor</h2>
-          <div class="muted" style="font-size:13px;margin-bottom:10px">
-            Tilt or nod your head <b>Up, Down, Left, or Right</b> to move the highlight, and hold for <b>5.0 seconds</b> to select.
+          <h2>Head control</h2>
+          <div class="muted" style="font-size:14px;margin-bottom:10px">
+            Move your head to move the highlight. Hold still for 5 seconds to choose.
           </div>
 
           <div class="cog-cam-wrap">
             <video id="cog-video" autoplay playsinline muted></video>
             <canvas id="cog-canvas"></canvas>
             <div id="cog-cam-placeholder" style="text-align:center;padding:16px">
-              <div style="font-size:32px">🙂</div>
-              <b>Camera sensor off</b>
-              <div class="muted" style="font-size:12px">Click "Enable Camera Sensor" to navigate with head movements</div>
+              <b>Camera off</b>
+              <div class="muted" style="font-size:13px">Press "Turn on camera" to answer with head movements</div>
             </div>
           </div>
 
           <div class="gesture-meter">
             <div style="display:flex;justify-content:space-between">
-              <span>Left / Right Tilt or Turn (← / →)</span>
+              <span>Left or right</span>
               <span id="cog-tilt-val">Center</span>
             </div>
             <div class="meter-bar"><div class="meter-fill" id="cog-tilt-bar"></div></div>
@@ -614,7 +588,7 @@
 
           <div class="gesture-meter">
             <div style="display:flex;justify-content:space-between">
-              <span>Up / Down Nod (↑ / ↓)</span>
+              <span>Up or down</span>
               <span id="cog-pitch-val">Center</span>
             </div>
             <div class="meter-bar"><div class="meter-fill" id="cog-pitch-bar"></div></div>
@@ -622,15 +596,15 @@
 
           <div class="gesture-meter">
             <div style="display:flex;justify-content:space-between">
-              <span>Hold-to-Confirm Timer (5.0s required)</span>
-              <span id="cog-hold-val">0.0s / 5.0s</span>
+              <span>Hold to choose</span>
+              <span id="cog-hold-val">0.0 of 5 s</span>
             </div>
-            <div class="meter-bar"><div class="meter-fill" id="cog-hold-bar" style="width:0%;background:#e67e22"></div></div>
+            <div class="meter-bar"><div class="meter-fill" id="cog-hold-bar" style="width:0%;background:#E08A1E"></div></div>
           </div>
         </div>
       </div>
     `;
-    main.appendChild(cogSection);
+    main.insertBefore(cogSection, main.querySelector("footer"));
   }
 
   // --------------------------------------------------
@@ -691,7 +665,7 @@
     const startCamBtn = $c("cog-start-cam");
     if (startCamBtn) {
       startCamBtn.disabled = false;
-      startCamBtn.textContent = "📷 Enable Camera Sensor";
+      startCamBtn.textContent = "Turn on camera";
     }
     const recenterBtn = $c("cog-recenter-btn");
     if (recenterBtn) recenterBtn.style.display = "none";
@@ -708,7 +682,7 @@
     // Update dropdown button label (shows ONLY the chosen game)
     const labelEl = $c("game-current-label");
     if (labelEl) {
-      labelEl.textContent = game === "logic" ? "🧩 Logical Reasoning" : "🧠 Memory Pattern";
+      labelEl.textContent = game === "logic" ? "Odd one out" : "Memory sequence";
     }
     document.querySelectorAll("[data-game-choice]").forEach(item => {
       item.classList.toggle("selected", item.dataset.gameChoice === game);
@@ -717,29 +691,21 @@
     $c("cog-summary-card").classList.remove("visible");
 
     if (game === "logic") {
-      $c("cog-hero-title").textContent = "Logical Reasoning — Odd One Out";
-      $c("cog-hero-desc").textContent = "Find differences, classify objects, and identify which item doesn't belong.";
-      $c("cog-skill-pills").innerHTML = `
-        <span class="tag">✓ Categorisation</span>
-        <span class="tag">✓ Analytical Thinking</span>
-        <span class="tag">✓ Problem-Solving</span>
-      `;
+      $c("cog-hero-title").textContent = "Odd one out";
+      $c("cog-hero-desc").textContent = "Four items appear. Pick the one that does not belong with the others.";
+      $c("cog-skill-pills").textContent = "Practises categorisation, analytical thinking and problem-solving.";
       $c("cog-progress").textContent = `0 / ${LOGICAL_QUESTIONS.length}`;
       $c("cog-skill-tag").textContent = "Skill: Categorisation";
-      $c("cog-acc-sub").textContent = "Correct classifications";
-      $c("cog-q-prompt").textContent = 'Press "Start Exercise" to begin Logical Reasoning';
+      $c("cog-acc-sub").textContent = "Share of answers";
+      $c("cog-q-prompt").textContent = 'Press "Start" to begin';
     } else {
-      $c("cog-hero-title").textContent = "Working Memory — Sequence Grid Recall";
-      $c("cog-hero-desc").textContent = "Watch the highlighted sequence of tiles, then repeat the exact pattern from memory.";
-      $c("cog-skill-pills").innerHTML = `
-        <span class="tag">✓ Working Memory</span>
-        <span class="tag">✓ Visual-Spatial Attention</span>
-        <span class="tag">✓ Sequential Recall</span>
-      `;
+      $c("cog-hero-title").textContent = "Memory sequence";
+      $c("cog-hero-desc").textContent = "Tiles light up one after another. Repeat them in the same order.";
+      $c("cog-skill-pills").textContent = "Practises working memory and attention.";
       $c("cog-progress").textContent = `0 / ${MEMORY_TOTAL_ROUNDS}`;
       $c("cog-skill-tag").textContent = "Skill: Working Memory";
-      $c("cog-acc-sub").textContent = "Sequences recalled";
-      $c("cog-q-prompt").textContent = 'Press "Start Exercise" to begin Memory Pattern';
+      $c("cog-acc-sub").textContent = "Sequences repeated correctly";
+      $c("cog-q-prompt").textContent = 'Press "Start" to begin';
     }
 
     $c("cog-options").innerHTML = "";
@@ -756,7 +722,7 @@
     // Update dropdown button label (shows ONLY the chosen control)
     const labelEl = $c("control-current-label");
     if (labelEl) {
-      labelEl.textContent = mode === "camera" ? "📷 Camera (Head Tilt)" : "🖱️ Mouse / Click";
+      labelEl.textContent = mode === "camera" ? "Head movements" : "Mouse";
     }
     document.querySelectorAll("[data-control-choice]").forEach(item => {
       item.classList.toggle("selected", item.dataset.controlChoice === mode);
@@ -775,14 +741,14 @@
       if (camPanel) camPanel.style.display = "none";
       if (layout) layout.classList.add("mouse-only");
       if (gestureState) gestureState.textContent = "Mouse";
-      if (gestureSub) gestureSub.textContent = "Click any option directly";
+      if (gestureSub) gestureSub.textContent = "Click an item to choose it";
       if (focusBadge) focusBadge.style.display = "none";
     } else {
       if (startCamBtn) startCamBtn.style.display = "inline-block";
       if (camPanel) camPanel.style.display = "block";
       if (layout) layout.classList.remove("mouse-only");
-      if (gestureState) gestureState.textContent = faceStream ? "Ready" : "Standby";
-      if (gestureSub) gestureSub.textContent = "Tilt Up/Down/Left/Right & hold 5.0s";
+      if (gestureState) gestureState.textContent = faceStream ? "Ready" : "Waiting";
+      if (gestureSub) gestureSub.textContent = "Tilt your head and hold for 5 s";
       if (focusBadge) focusBadge.style.display = "inline-flex";
     }
 
@@ -800,11 +766,11 @@
     if (cogInputMode === "mouse") {
       fb.className = "feedback";
       fb.innerHTML = cogGame === "logic"
-        ? `🖱️ <b>Mouse Mode:</b> Click directly on the item that does not belong to the group.`
-        : `🖱️ <b>Mouse Mode:</b> Watch the pattern flash, then click the tiles in the exact same order.`;
+        ? `Click the item that does not belong with the others.`
+        : `Watch the tiles light up, then click them in the same order.`;
     } else {
       fb.className = "feedback";
-      fb.innerHTML = `📷 <b>Camera Mode:</b> Tilt or nod your head <b>Up, Down, Left, or Right</b> to highlight a tile, then <b>keep your head in that position for 5 seconds</b> to confirm.`;
+      fb.innerHTML = `Tilt or nod your head up, down, left or right to move the highlight. Keep it there for 5 seconds to choose.`;
     }
   }
 
@@ -814,7 +780,7 @@
     const holdBar = $c("cog-hold-bar");
     const holdVal = $c("cog-hold-val");
     if (holdBar) holdBar.style.width = "0%";
-    if (holdVal) holdVal.textContent = "0.0s / 5.0s";
+    if (holdVal) holdVal.textContent = "0.0 of 5 s";
 
     document.querySelectorAll(".cog-option").forEach(el => {
       el.classList.remove("holding");
@@ -829,9 +795,9 @@
     const eyebrow = $c("eyebrow");
     const title = $c("title");
     const subtitle = $c("subtitle");
-    if (eyebrow) eyebrow.textContent = "COGNITIVE WORKSPACE / INTERACTIVE TRAINING";
-    if (title) title.textContent = "Cognitive training";
-    if (subtitle) subtitle.textContent = "Practice logical reasoning and working memory with camera head-tilt or mouse.";
+    if (eyebrow) eyebrow.textContent = "";
+    if (title) title.textContent = "Thinking games";
+    if (subtitle) subtitle.textContent = "Answer with head movements or the mouse.";
   }
 
   // --------------------------------------------------
@@ -849,7 +815,7 @@
     const isCamera = cogInputMode === "camera";
     $c("cog-progress").textContent = `${cogIndex + 1} / ${LOGICAL_QUESTIONS.length}`;
     $c("cog-skill-tag").textContent = `Skill: ${q.skill}`;
-    $c("cog-q-eyebrow").textContent = `QUESTION ${cogIndex + 1} OF ${LOGICAL_QUESTIONS.length} · ${q.skill.toUpperCase()}`;
+    $c("cog-q-eyebrow").textContent = `Question ${cogIndex + 1} of ${LOGICAL_QUESTIONS.length}: ${q.skill.toLowerCase()}`;
     $c("cog-q-prompt").textContent = q.prompt;
     updateCogFeedbackInstructions();
 
@@ -908,8 +874,8 @@
     const fb = $c("cog-feedback");
     fb.className = isCorrect ? "feedback" : "feedback warn";
     fb.innerHTML = isCorrect
-      ? `✅ <b>Correct!</b> ${q.explanation}`
-      : `❌ <b>Not quite.</b> ${q.explanation}`;
+      ? `<b>Correct.</b> ${q.explanation}`
+      : `<b>Not quite.</b> ${q.explanation}`;
 
     setTimeout(() => {
       cogIndex += 1;
@@ -958,11 +924,11 @@
     memSequence = Array.from({ length: seqLen }, () => Math.floor(Math.random() * 4));
 
     $c("cog-progress").textContent = `${cogIndex + 1} / ${MEMORY_TOTAL_ROUNDS}`;
-    $c("cog-skill-tag").textContent = `Sequence length: ${seqLen} tiles`;
-    $c("cog-q-eyebrow").textContent = `ROUND ${cogIndex + 1} OF ${MEMORY_TOTAL_ROUNDS} · WORKING MEMORY`;
-    $c("cog-q-prompt").textContent = `Watch carefully! Memorize the ${seqLen}-step pattern...`;
+    $c("cog-skill-tag").textContent = `${seqLen} tiles to remember`;
+    $c("cog-q-eyebrow").textContent = `Round ${cogIndex + 1} of ${MEMORY_TOTAL_ROUNDS}`;
+    $c("cog-q-prompt").textContent = `Watch the ${seqLen} tiles light up`;
     $c("cog-feedback").className = "feedback";
-    $c("cog-feedback").innerHTML = `👀 <b>Watch the flashing tiles...</b> Do not select yet.`;
+    $c("cog-feedback").textContent = "Just watch for now. You choose after the tiles stop.";
 
     renderMemoryTiles(false);
 
@@ -983,7 +949,7 @@
       if (!cogActive) return;
       memShowingPattern = false;
       cogQuestionStart = Date.now();
-      $c("cog-q-prompt").textContent = `Your turn! Repeat step 1 of ${memSequence.length}`;
+      $c("cog-q-prompt").textContent = `Your turn: tile 1 of ${memSequence.length}`;
       renderMemoryTiles(true);
       updateCogFeedbackInstructions();
     }, 650 + memSequence.length * 950 + 200);
@@ -1016,7 +982,7 @@
         $c("cog-speed").textContent = `${avgSec}s`;
 
         $c("cog-feedback").className = "feedback";
-        $c("cog-feedback").innerHTML = `✅ <b>Sequence matched!</b> Moving to next round...`;
+        $c("cog-feedback").textContent = "Correct. The next round is coming.";
 
         setTimeout(() => {
           cogIndex += 1;
@@ -1024,9 +990,9 @@
           else finishCogSession();
         }, 1600);
       } else {
-        $c("cog-q-prompt").textContent = `Good! Now select step ${memUserStep + 1} of ${memSequence.length}`;
+        $c("cog-q-prompt").textContent = `Good. Tile ${memUserStep + 1} of ${memSequence.length}`;
         $c("cog-feedback").className = "feedback";
-        $c("cog-feedback").innerHTML = `✓ Step ${memUserStep}/${memSequence.length} correct — keep going!`;
+        $c("cog-feedback").textContent = `${memUserStep} of ${memSequence.length} correct so far.`;
       }
     } else {
       cogAnswered = true;
@@ -1037,7 +1003,7 @@
       if (cards[expectedIdx]) cards[expectedIdx].classList.add("correct");
 
       $c("cog-feedback").className = "feedback warn";
-      $c("cog-feedback").innerHTML = `❌ <b>Sequence broken.</b> Expected <b>${MEMORY_TILES[expectedIdx].label}</b>.`;
+      $c("cog-feedback").innerHTML = `<b>Not quite.</b> The next tile was ${MEMORY_TILES[expectedIdx].label}.`;
 
       setTimeout(() => {
         cogIndex += 1;
@@ -1092,43 +1058,38 @@
 
     const card = $c("cog-summary-card");
     const grid = $c("cog-summary-grid");
-    $c("cog-summary-title").textContent = cogGame === "logic"
-      ? "Logical Reasoning Complete"
-      : "Working Memory Complete";
+    $c("cog-summary-title").textContent = cogGame === "logic" ? "Odd one out: done" : "Memory sequence: done";
 
     grid.innerHTML = `
-      <div class="summary-item"><span class="metric-label">SCORE</span><b>${cogCorrect} / ${totalRounds}</b></div>
-      <div class="summary-item"><span class="metric-label">ACCURACY</span><b>${accPct}%</b></div>
-      <div class="summary-item"><span class="metric-label">AVG STEP PACE</span><b>${avgSec}s</b></div>
-      <div class="summary-item"><span class="metric-label">INPUT MODE</span><b>${cogInputMode === "camera" ? "Camera (4-Way Tilt)" : "Mouse"}</b></div>
+      <div class="summary-item"><span class="metric-label">Score</span><b>${cogCorrect} of ${totalRounds}</b></div>
+      <div class="summary-item"><span class="metric-label">Correct</span><b>${accPct}%</b></div>
+      <div class="summary-item"><span class="metric-label">Time per answer</span><b>${avgSec === "—" ? "–" : avgSec + " s"}</b></div>
+      <div class="summary-item"><span class="metric-label">Answered with</span><b>${cogInputMode === "camera" ? "Head movements" : "Mouse"}</b></div>
     `;
     card.classList.add("visible");
-    $c("cog-q-prompt").textContent = "Session completed! Review your results below.";
+    $c("cog-q-prompt").textContent = "Done. Your results are below.";
     $c("cog-feedback").className = "feedback";
-
     if (cogGame === "logic") {
       const skillSummary = Object.entries(cogSkillStats)
-        .map(([k, v]) => `${k}: ${v.correct}/${v.total}`)
-        .join(" · ");
-      $c("cog-feedback").textContent = `Domain breakdown — ${skillSummary}`;
+        .map(([k, v]) => `${k.toLowerCase()} ${v.correct} of ${v.total}`)
+        .join(", ");
+      $c("cog-feedback").textContent = `By skill: ${skillSummary}.`;
     } else {
-      $c("cog-feedback").textContent = `Completed ${cogCorrect} of ${totalRounds} visual-spatial memory sequences.`;
+      $c("cog-feedback").textContent = `You repeated ${cogCorrect} of ${totalRounds} sequences correctly.`;
     }
 
-    try {
-      const sessions = JSON.parse(localStorage.getItem("gem_sessions") || "[]");
-      sessions.push({
-        date: new Date().toISOString(),
-        exercise: cogGame === "logic" ? "cognitive_logic" : "cognitive_memory",
-        side: cogInputMode,
-        reps: cogCorrect,
-        target: totalRounds,
-        seconds: totalSec,
-        activeSeconds: totalSec,
-        endedBy: "completed"
-      });
-      localStorage.setItem("gem_sessions", JSON.stringify(sessions));
-    } catch (_) {}
+    const savedTag = $c("cog-saved-tag");
+    savedTag.textContent = "Saving…";
+    fetch("/api/cognitive/result", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        game: cogGame, correct: cogCorrect, total: totalRounds, seconds: totalSec,
+        avg_sec: avgSec === "—" ? null : Number(avgSec), input: cogInputMode,
+        skills: cogGame === "logic" ? cogSkillStats : null
+      })
+    }).then(r => { savedTag.textContent = r.ok ? "Saved" : "Not saved"; })
+      .catch(() => { savedTag.textContent = "Not saved"; });
   }
 
   function startCogSession() {
@@ -1172,9 +1133,13 @@
     }
     const btn = $c("cog-start-cam");
     btn.disabled = true;
-    btn.textContent = "Loading camera AI...";
+    btn.textContent = "Loading…";
 
     try {
+      // The exercise server may be using the webcam; free it for the browser first.
+      await fetch("/api/camera/stop", { method: "POST" }).catch(() => {});
+      window.dispatchEvent(new Event("ability:camera-released"));
+
       if (!faceLandmarker) {
         const vision = await import("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs");
         const fileset = await vision.FilesetResolver.forVisionTasks(
@@ -1200,16 +1165,16 @@
       $c("cog-cam-placeholder").style.display = "none";
       $c("cog-gesture-state").textContent = "Active";
       $c("cog-recenter-btn").style.display = "inline-block";
-      btn.textContent = "✓ Camera Sensor Active";
+      btn.textContent = "Camera on";
 
       if (!cogActive) startCogSession();
       detectFaceLoop();
     } catch (err) {
       console.error("Facial tracking init failed:", err);
       btn.disabled = false;
-      btn.textContent = "📷 Retry Camera Sensor";
+      btn.textContent = "Try camera again";
       $c("cog-feedback").textContent =
-        "Could not start webcam (" + err.message + "). You can switch to Mouse / Click mode above.";
+        "Could not start the camera (" + err.message + "). You can answer with the mouse instead.";
     }
   }
 
@@ -1306,14 +1271,14 @@
       }
 
       if (detectedDir === "left" || detectedDir === "right") {
-        $c("cog-tilt-val").textContent = detectedDir === "right" ? "Right →" : "← Left";
-        $c("cog-pitch-val").textContent = "Center";
+        $c("cog-tilt-val").textContent = detectedDir === "right" ? "Right" : "Left";
+        $c("cog-pitch-val").textContent = "Centre";
       } else if (detectedDir === "up" || detectedDir === "down") {
-        $c("cog-pitch-val").textContent = detectedDir === "up" ? "↑ Tilted Up" : "↓ Nodded Down";
-        $c("cog-tilt-val").textContent = "Center";
+        $c("cog-pitch-val").textContent = detectedDir === "up" ? "Up" : "Down";
+        $c("cog-tilt-val").textContent = "Centre";
       } else {
-        $c("cog-tilt-val").textContent = "Center";
-        $c("cog-pitch-val").textContent = "Center";
+        $c("cog-tilt-val").textContent = "Centre";
+        $c("cog-pitch-val").textContent = "Centre";
       }
 
       if (detectedDir) {
@@ -1329,8 +1294,8 @@
           const holdPct = Math.min(100, (heldMs / HOLD_CONFIRM_MS) * 100);
 
           $c("cog-hold-bar").style.width = `${holdPct}%`;
-          $c("cog-hold-val").textContent = `${holdSec.toFixed(1)}s / 5.0s`;
-          $c("cog-gesture-state").textContent = `Hold ${holdSec.toFixed(1)}s`;
+          $c("cog-hold-val").textContent = `${holdSec.toFixed(1)} of 5 s`;
+          $c("cog-gesture-state").textContent = `${holdSec.toFixed(1)} s`;
 
           const cards = document.querySelectorAll(".cog-option");
           cards.forEach((card, i) => {
@@ -1346,7 +1311,7 @@
         }
       } else {
         if (cogActive && !cogAnswered && !memShowingPattern) {
-          $c("cog-gesture-state").textContent = "Tilt & Hold";
+          $c("cog-gesture-state").textContent = "Tilt and hold";
         }
         resetHoldTimer();
       }
@@ -1405,8 +1370,6 @@
       modeGate.hidden = true;
       activateCognitivePage();
       setCogInputMode(cogInputMode);
-    } else if (e.target.id === "switch-mode-btn") {
-      modeGate.hidden = false;
     } else if (e.target.dataset && e.target.dataset.page === "cognitive") {
       activateCognitivePage();
     } else if (e.target.id === "cog-start-cam") {

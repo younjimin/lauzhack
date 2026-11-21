@@ -3,7 +3,7 @@ main_with_step2.py — Step 1 + Step 2 debug runner in an OpenCV window (no web 
 The web app is main.py; use this to tune thresholds or measure accuracy on test videos.
 
     python main_with_step2.py                                   # webcam, side arm raise
-    python main_with_step2.py --exercise finger_tap
+    python main_with_step2.py --exercise finger_opposition
     python main_with_step2.py --exercise seated_knee_extension --side left
     python main_with_step2.py --video test.mp4 --expected 10    # test video, compare with true count
     python main_with_step2.py --video test.mp4 --dump frames.json   # save frames for run_frames.js / re-runs
@@ -110,7 +110,7 @@ def main():
 
             if not args.no_window:
                 img = detector.draw_skeleton(frame, tracking, vis_threshold=0.5)
-                cv2.imshow("Rehab Assistant - Step 1 + Step 2", draw_overlay(img, r))
+                cv2.imshow("ability+ debug - Step 1 + Step 2", draw_overlay(img, r))
                 key = cv2.waitKey(1) & 0xFF
                 if key == ord("q"):
                     break

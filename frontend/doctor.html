@@ -3,149 +3,201 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GEM — Physiotherapist dashboard</title>
+  <title>ability+ · Physiotherapist</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
   <style>
-    :root { --bg:#f4f7f6; --card:#fff; --ink:#19332f; --muted:#6b7b77; --line:#e1eae6; --green:#167b69; --soft:#e8f4ef;
-            --orange:#f4a261; --amber-soft:#fdf1e3; --red:#d9534f; --red-soft:#fbe3e1; }
+    :root {
+      --paper: #f4f7f6; --surface: #FFFFFF; --ink: #19332f; --ink-2: #5f6f6a; --rule: #e1eae6;
+      --brand: #167b69; --brand-wash: #e8f4ef; --danger: #C2362F; --danger-wash: #FBEDEC;
+      --ok: #1F7A4D; --amber: #9A5800; --focus: #F2A93B;
+    }
     * { box-sizing: border-box; }
-    body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.5 Inter, system-ui, Arial, sans-serif; }
-    button, input, select, textarea { font:inherit; }
-    button { cursor:pointer; border:0; border-radius:9px; padding:9px 13px; background:#edf3f0; color:var(--ink); font-weight:650; }
-    button.primary { background:var(--green); color:#fff; }
-    button:disabled { opacity:.5; cursor:not-allowed; }
-    input, select, textarea { border:1px solid var(--line); border-radius:9px; padding:9px 11px; background:#fff; color:var(--ink); width:100%; }
-    button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline:3px solid var(--orange); outline-offset:2px; }
+    body { margin: 0; background: var(--paper); color: var(--ink); font: 16px/1.5 "Atkinson Hyperlegible", system-ui, sans-serif; }
+    button, input, select, textarea { font: inherit; color: inherit; }
+    :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+    button { cursor: pointer; border: 1.5px solid var(--rule); background: var(--surface); border-radius: 6px; padding: 8px 14px; font-weight: 700; }
+    button:hover:not(:disabled) { border-color: var(--brand); }
+    button.primary { background: var(--brand); border-color: var(--brand); color: #fff; }
+    button.primary:hover:not(:disabled) { background: #115e50; }
+    button:disabled { opacity: .5; cursor: not-allowed; }
+    input, select, textarea { width: 100%; border: 1.5px solid var(--rule); border-radius: 6px; padding: 8px 10px; background: #fff; }
+    input:focus, select:focus, textarea:focus { border-color: var(--brand); }
 
-    .app { display:grid; grid-template-columns:300px 1fr; min-height:100vh; }
-    .side { background:#fff; border-right:1px solid var(--line); padding:20px 14px; display:flex; flex-direction:column; gap:12px; }
-    .brand { font-weight:800; font-size:22px; letter-spacing:1px; }
-    .brand span { color:var(--green); }
-    .me { font-size:13px; color:var(--muted); }
-    .label { font-size:10px; letter-spacing:1.3px; color:var(--muted); font-weight:800; margin-top:8px; }
-    .add { display:flex; gap:6px; }
-    .add input { font-size:13px; }
-    .plist { display:flex; flex-direction:column; gap:4px; overflow:auto; }
-    .pitem { text-align:left; background:transparent; padding:10px; border-radius:10px; display:flex; justify-content:space-between; gap:8px; align-items:center; }
-    .pitem.active { background:var(--soft); }
-    .pitem small { display:block; color:var(--muted); font-weight:400; font-size:12px; }
-    .dots { display:flex; gap:4px; flex-shrink:0; }
-    .dot { border-radius:10px; padding:1px 7px; font-size:11px; font-weight:700; }
-    .dot.red { background:var(--red); color:#fff; }
-    .dot.blue { background:var(--green); color:#fff; }
+    .wordmark { font-weight: 700; font-size: 22px; letter-spacing: -0.02em; display: inline-flex; align-items: center; gap: 3px; }
+    .wordmark .plus { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 5px; background: var(--brand);
+                      color: #fff; font-size: 17px; line-height: 1; transform: translateY(1px); }
 
-    main { padding:28px; max-width:1300px; width:100%; }
-    h1 { font-size:24px; margin:0 0 2px; }
-    h2 { font-size:16px; margin:0 0 10px; }
-    .muted { color:var(--muted); }
-    small.muted { font-size:12px; }
-    .top { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:18px; flex-wrap:wrap; }
-    .grid { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px; margin-bottom:14px; }
-    .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:16px; min-width:0; }
-    .metric-label { font-size:10px; color:var(--muted); font-weight:750; letter-spacing:.5px; }
-    .metric { font-size:26px; font-weight:800; margin:4px 0 0; }
-    .metric.bad { color:var(--red); }
-    .two { display:grid; grid-template-columns:1.5fr 1fr; gap:14px; margin-bottom:14px; }
+    .topbar { display: flex; align-items: center; gap: 16px; padding: 14px 28px; background: var(--surface); border-bottom: 1px solid var(--rule); }
+    .topbar .who { margin-left: auto; color: var(--ink-2); font-size: 15px; }
+    .topbar button { padding: 6px 12px; }
 
-    table { width:100%; border-collapse:collapse; font-size:13px; }
-    th { text-align:left; font-size:10px; letter-spacing:.5px; color:var(--muted); padding:8px 6px; border-bottom:1px solid var(--line); }
-    td { padding:9px 6px; border-bottom:1px solid var(--line); vertical-align:top; }
-    tr.flag td { background:#fffaf7; }
-    .tag { display:inline-block; padding:3px 8px; border-radius:20px; font-size:11px; font-weight:700; background:var(--soft); color:var(--green); white-space:nowrap; margin:1px; }
-    .tag.warn { background:var(--red-soft); color:#8a2a26; }
-    .tag.amber { background:var(--amber-soft); color:#8a5a1c; }
-    .tag.grey { background:#eef1f0; color:var(--muted); }
-    .note { font-size:12px; color:var(--green); margin-top:4px; }
-    .review { display:flex; gap:6px; margin-top:6px; }
-    .review input { font-size:12px; padding:6px 8px; }
-    .review button { font-size:12px; padding:6px 10px; white-space:nowrap; }
+    .app { display: grid; grid-template-columns: 290px minmax(0, 1fr); min-height: calc(100vh - 59px); }
 
-    .rx { border-bottom:1px solid var(--line); padding:10px 0; }
-    .rx:last-child { border:0; }
-    .rx-grid { display:grid; grid-template-columns:repeat(5, minmax(0,1fr)); gap:8px; margin:8px 0; }
-    .rx-grid label { font-size:11px; font-weight:700; color:var(--muted); display:block; }
-    .rxmsg { font-size:12px; margin-top:4px; }
+    .side { background: var(--surface); border-right: 1px solid var(--rule); padding: 22px 0; }
+    .side h2 { font-size: 15px; margin: 0 22px 10px; }
+    .add { display: flex; gap: 6px; margin: 0 22px; }
+    .add button { padding: 8px 12px; }
+    .err { color: var(--danger); font-size: 14px; min-height: 20px; margin: 6px 22px 14px; }
+    .plist { border-top: 1px solid var(--rule); }
+    .pitem { display: block; width: 100%; text-align: left; border: 0; border-bottom: 1px solid var(--rule); border-radius: 0; background: none;
+             padding: 12px 22px; font-weight: 400; border-left: 4px solid transparent; }
+    .pitem:hover:not(:disabled) { background: var(--paper); border-color: var(--rule); border-left-color: transparent; }
+    .pitem.active { background: var(--brand-wash); border-left-color: var(--brand); }
+    .pitem b { display: block; }
+    .pitem .line { font-size: 14px; color: var(--ink-2); }
+    .pitem .alert { color: var(--danger); font-weight: 700; }
+    .pitem .unread { color: var(--brand); font-weight: 700; }
 
-    .msgs { display:flex; flex-direction:column; gap:6px; max-height:340px; overflow:auto; padding:4px 0; }
-    .msg { max-width:85%; padding:8px 11px; border-radius:12px; font-size:13px; white-space:pre-wrap; word-wrap:break-word; }
-    .msg.them { background:#f0f5f2; align-self:flex-start; }
-    .msg.mine { background:var(--green); color:#fff; align-self:flex-end; }
-    .msg small { display:block; opacity:.7; font-size:10px; margin-top:2px; }
-    .compose { display:flex; gap:8px; margin-top:10px; }
-    .compose textarea { resize:none; height:44px; }
+    main { padding: 28px 36px 60px; max-width: 1240px; width: 100%; }
+    .head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+    h1 { font-size: 34px; line-height: 1.1; letter-spacing: -0.02em; margin: 0; }
+    .head .email { color: var(--ink-2); }
 
-    .empty { color:var(--muted); padding:30px 0; text-align:center; }
-    .err { color:var(--red); font-size:12px; min-height:16px; }
-    [hidden] { display:none !important; }
+    /* key figures: one ruled strip, not a row of cards */
+    .figures { display: grid; grid-template-columns: repeat(4, 1fr); margin: 22px 0 30px; background: var(--surface);
+               border: 1px solid var(--rule); border-radius: 10px; }
+    .figures div { padding: 14px 18px; }
+    .figures div + div { border-left: 1px solid var(--rule); }
+    .figures dt { font-size: 14px; color: var(--ink-2); }
+    .figures dd { margin: 2px 0 0; font-size: 30px; font-weight: 700; letter-spacing: -0.02em; }
+    .figures dd.bad { color: var(--danger); }
+    .figures small { display: block; font-size: 13px; color: var(--ink-2); }
 
-    @media (max-width:1000px) { .two { grid-template-columns:1fr; } .rx-grid { grid-template-columns:repeat(2,1fr); } }
-    @media (max-width:800px) { .app { grid-template-columns:1fr; } .side { border-right:0; border-bottom:1px solid var(--line); }
-      .plist { max-height:220px; } .grid { grid-template-columns:repeat(2,1fr); } main { padding:16px; }
-      table { font-size:12px; } }
+    section { margin-bottom: 34px; }
+    section > h2 { font-size: 20px; margin: 0 0 4px; letter-spacing: -0.01em; }
+    section > .hint { color: var(--ink-2); font-size: 15px; margin: 0 0 12px; }
+
+    .table { background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; overflow: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 15px; }
+    th { text-align: left; font-weight: 700; font-size: 14px; color: var(--ink-2); padding: 10px 14px; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+    td { padding: 12px 14px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+    tr:last-child td { border-bottom: 0; }
+    tr.flag td:first-child { box-shadow: inset 4px 0 0 var(--danger); }
+    tr.flag { background: var(--danger-wash); }
+    .sub { display: block; color: var(--ink-2); font-size: 14px; }
+    .st-pain { color: var(--danger); font-weight: 700; }
+    .st-ok { color: var(--ok); font-weight: 700; }
+    .st-stop { color: var(--ink-2); font-weight: 700; }
+    .st-limit { display: block; color: var(--amber); font-size: 14px; }
+    .reviewed { display: block; margin-top: 6px; font-size: 14px; color: var(--ink-2); }
+    .reviewed q { color: var(--ink); }
+    .review { display: flex; gap: 6px; margin-top: 8px; min-width: 260px; }
+    .review input { font-size: 14px; padding: 6px 8px; }
+    .review button { font-size: 14px; padding: 6px 10px; white-space: nowrap; }
+    .empty { padding: 28px; color: var(--ink-2); text-align: center; }
+
+    .split { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 28px; }
+    .panel { background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 18px 20px; }
+
+    .rx + .rx { border-top: 1px solid var(--rule); margin-top: 16px; padding-top: 16px; }
+    .rx h3 { font-size: 17px; margin: 0; }
+    .rx .why { color: var(--ink-2); font-size: 14px; margin: 2px 0 10px; }
+    .rx-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; margin-bottom: 12px; }
+    .rx-grid label { display: block; font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+    .rx-foot { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .rxmsg { font-size: 14px; color: var(--ink-2); }
+    .rxmsg.bad { color: var(--danger); }
+
+    .msgs { display: flex; flex-direction: column; gap: 8px; height: 320px; overflow: auto; padding: 2px; }
+    .msg { max-width: 82%; padding: 9px 12px; border-radius: 10px; font-size: 15px; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .msg.them { background: var(--paper); align-self: flex-start; border-bottom-left-radius: 3px; }
+    .msg.mine { background: var(--brand); color: #fff; align-self: flex-end; border-bottom-right-radius: 3px; }
+    .msg time { display: block; font-size: 12px; opacity: .75; margin-top: 2px; }
+    .compose { display: flex; gap: 8px; margin-top: 12px; }
+    .compose textarea { resize: none; height: 46px; }
+
+    .start { padding: 80px 20px; text-align: center; color: var(--ink-2); }
+    .start h1 { color: var(--ink); margin-bottom: 8px; }
+    [hidden] { display: none !important; }
+
+    @media (max-width: 1050px) { .split { grid-template-columns: 1fr; } }
+    @media (max-width: 800px) {
+      .app { grid-template-columns: 1fr; }
+      .side { border-right: 0; border-bottom: 1px solid var(--rule); }
+      .plist { max-height: 240px; overflow: auto; }
+      main { padding: 20px 16px 48px; }
+      .figures { grid-template-columns: 1fr 1fr; }
+      .figures div:nth-child(3) { border-left: 0; }
+      .figures div:nth-child(n+3) { border-top: 1px solid var(--rule); }
+      .topbar { padding: 12px 16px; }
+      .topbar .who { display: none; }
+      .topbar button { margin-left: auto; }
+    }
   </style>
 </head>
 <body>
+<header class="topbar">
+  <div class="wordmark" aria-label="ability plus">ability<span class="plus" aria-hidden="true">+</span></div>
+  <span class="who" id="me"></span>
+  <button id="logout">Log out</button>
+</header>
+
 <div class="app">
   <aside class="side">
-    <div class="brand">✚ <span>GEM</span> <small class="muted" style="font-size:12px;font-weight:600">Physio</small></div>
-    <div class="me" id="me">…</div>
-    <button id="logout" style="align-self:flex-start">Log out</button>
-
-    <div class="label">ADD PATIENT</div>
+    <h2>Add a patient</h2>
     <form class="add" id="add-form">
-      <input id="add-email" type="email" placeholder="patient@email.com" aria-label="Patient email">
+      <input id="add-email" type="email" placeholder="Patient's email" aria-label="Patient's email">
       <button class="primary" type="submit">Add</button>
     </form>
-    <div class="err" id="add-err"></div>
-
-    <div class="label">MY PATIENTS</div>
-    <div class="plist" id="plist"></div>
+    <p class="err" id="add-err" role="alert"></p>
+    <h2>Patients</h2>
+    <nav class="plist" id="plist" aria-label="Patients"></nav>
   </aside>
 
   <main>
-    <div id="none" class="empty">Select a patient on the left, or add one with their email.</div>
+    <div class="start" id="none">
+      <h1>No patient selected</h1>
+      <p>Pick a patient from the list, or add one with the email they signed up with.</p>
+    </div>
 
     <div id="detail" hidden>
-      <div class="top">
+      <div class="head">
         <div>
-          <h1 id="p-name">—</h1>
-          <div class="muted" id="p-email"></div>
+          <h1 id="p-name"></h1>
+          <div class="email" id="p-email"></div>
         </div>
-        <button id="export">↓ Export patient data (JSON)</button>
+        <button id="export">Download patient data</button>
       </div>
 
-      <div class="grid">
-        <div class="card"><div class="metric-label">SESSIONS (7 DAYS)</div><div class="metric" id="m-week">0</div><small class="muted" id="m-days"></small></div>
-        <div class="card"><div class="metric-label">COMPLETION RATE</div><div class="metric" id="m-comp">—</div><small class="muted" id="m-total"></small></div>
-        <div class="card"><div class="metric-label">PAIN REPORTS</div><div class="metric" id="m-pain">0</div><small class="muted">All time</small></div>
-        <div class="card"><div class="metric-label">NEEDS REVIEW</div><div class="metric" id="m-review">0</div><small class="muted">Pain or safety warning, not reviewed</small></div>
-      </div>
+      <dl class="figures">
+        <div><dt>Sessions this week</dt><dd id="m-week">0</dd><small id="m-days"></small></div>
+        <div><dt>Reached the target</dt><dd id="m-comp">–</dd><small id="m-total"></small></div>
+        <div><dt>Pain reported</dt><dd id="m-pain">0</dd><small>All sessions</small></div>
+        <div><dt>Waiting for your review</dt><dd id="m-review">0</dd><small>Pain or went past the limit</small></div>
+      </dl>
 
-      <div class="two">
-        <div class="card">
-          <h2>Sessions</h2>
-          <div style="overflow:auto">
-            <table>
-              <thead><tr><th>DATE</th><th>EXERCISE</th><th>RESULT</th><th>MOVEMENT</th><th>STATUS / REVIEW</th></tr></thead>
-              <tbody id="sessions"></tbody>
-            </table>
-          </div>
-          <div class="empty" id="no-sessions" hidden>No sessions yet. They appear here as soon as the patient finishes an exercise.</div>
+      <section>
+        <h2>Sessions</h2>
+        <p class="hint">New sessions appear here when the patient finishes an exercise. Red rows need your review.</p>
+        <div class="table">
+          <table>
+            <thead><tr><th>When</th><th>Exercise</th><th>Repetitions</th><th>Movement</th><th>Outcome and review</th></tr></thead>
+            <tbody id="sessions"></tbody>
+          </table>
+          <div class="empty" id="no-sessions" hidden>No sessions yet.</div>
         </div>
+      </section>
 
-        <div class="card">
+      <div class="split">
+        <section>
+          <h2>Prescription</h2>
+          <p class="hint">Changes apply from the patient's next session. Values that could be unsafe are rejected.</p>
+          <div class="panel" id="rx"></div>
+        </section>
+
+        <section>
           <h2>Messages</h2>
-          <div class="msgs" id="msgs"></div>
-          <div class="compose">
-            <textarea id="msg-input" placeholder="Write to your patient…" maxlength="2000" aria-label="Message"></textarea>
-            <button class="primary" id="msg-send">Send</button>
+          <p class="hint">The patient sees these in the app.</p>
+          <div class="panel">
+            <div class="msgs" id="msgs" aria-live="polite"></div>
+            <div class="compose">
+              <textarea id="msg-input" placeholder="Write to your patient" maxlength="2000" aria-label="Message"></textarea>
+              <button class="primary" id="msg-send">Send</button>
+            </div>
           </div>
-        </div>
-      </div>
-
-      <div class="card">
-        <h2>Prescription</h2>
-        <div class="muted" style="font-size:13px">Applies from the patient's next session. Every value is validated before saving.</div>
-        <div id="rx"></div>
+        </section>
       </div>
     </div>
   </main>
@@ -158,8 +210,8 @@
     [].concat(kids).forEach(k => k != null && n.append(k));
     return n;
   };
-  const fmt = iso => iso ? new Date(iso).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—';
-  const deg = v => v == null ? '—' : Math.round(v) + '°';
+  const when = iso => iso ? new Date(iso).toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
+  const deg = v => v == null ? '–' : Math.round(v) + '°';
   const api = async (url, opts = {}) => {
     const r = await fetch(url, { headers: { 'Content-Type': 'application/json' }, ...opts });
     if (r.status === 401) { location.href = '/login'; throw new Error('Logged out'); }
@@ -170,7 +222,8 @@
 
   const EX_NAMES = { elbow_curl: 'Arm curl', finger_opposition: 'Finger opposition', finger_tap: 'Finger tapping',
                      side_arm_raise: 'Side shoulder raise', seated_knee_extension: 'Knee extension',
-                     dual_task: 'Dual-task (hold + questions)' };
+                     dual_task: 'Dual-task', cognitive_logic: 'Odd one out', cognitive_memory: 'Memory sequence' };
+  const COGNITIVE = ['cognitive_logic', 'cognitive_memory'];
   let patients = [];
   let selected = null;
 
@@ -179,15 +232,17 @@
     patients = (await api('/api/doctor/patients')).patients;
     const list = $('plist');
     list.innerHTML = '';
-    if (!patients.length) list.append(el('div', { className: 'muted', style: 'font-size:13px', textContent: 'No patients yet.' }));
+    if (!patients.length) list.append(el('p', { className: 'empty', textContent: 'No patients yet.' }));
     for (const p of patients) {
-      const dots = el('div', { className: 'dots' });
-      if (p.stats.needs_review) dots.append(el('span', { className: 'dot red', title: 'Needs review', textContent: '⚠ ' + p.stats.needs_review }));
-      if (p.unread) dots.append(el('span', { className: 'dot blue', title: 'Unread messages', textContent: '✉ ' + p.unread }));
-      const btn = el('button', { className: 'pitem' + (p.id === selected ? ' active' : '') }, [
-        el('div', {}, [p.name, el('small', { textContent: p.stats.last_session ? 'Last session ' + fmt(p.stats.last_session) : 'No sessions yet' })]),
-        dots,
-      ]);
+      const line = el('span', { className: 'line' });
+      if (p.stats.needs_review) line.append(el('span', { className: 'alert', textContent: `${p.stats.needs_review} to review` }));
+      if (p.unread) {
+        if (line.childNodes.length) line.append(', ');
+        line.append(el('span', { className: 'unread', textContent: `${p.unread} new message${p.unread > 1 ? 's' : ''}` }));
+      }
+      if (!line.childNodes.length) line.textContent = p.stats.last_session ? `Last session ${when(p.stats.last_session)}` : 'No sessions yet';
+      const btn = el('button', { className: 'pitem' + (p.id === selected ? ' active' : '') }, [el('b', { textContent: p.name }), line]);
+      if (p.id === selected) btn.setAttribute('aria-current', 'true');
       btn.onclick = () => select(p.id);
       list.append(btn);
     }
@@ -219,9 +274,9 @@
     $('p-email').textContent = d.patient.email;
     const s = d.stats;
     $('m-week').textContent = s.week;
-    $('m-days').textContent = `${s.active_days} active day${s.active_days === 1 ? '' : 's'}`;
-    $('m-comp').textContent = s.completion_pct == null ? '—' : s.completion_pct + '%';
-    $('m-total').textContent = `${s.total} sessions in total`;
+    $('m-days').textContent = `on ${s.active_days} of the last 7 days`;
+    $('m-comp').textContent = s.completion_pct == null ? '–' : s.completion_pct + '%';
+    $('m-total').textContent = `of ${s.total} session${s.total === 1 ? '' : 's'}`;
     $('m-pain').textContent = s.pain;
     $('m-pain').classList.toggle('bad', s.pain > 0);
     $('m-review').textContent = s.needs_review;
@@ -235,38 +290,48 @@
     body.innerHTML = '';
     $('no-sessions').hidden = rows.length > 0;
     for (const s of rows) {
-      const result = [el('b', { textContent: `${s.reps}/${s.target_reps ?? '?'}` }), s.exercise === 'dual_task' ? ' correct' : ' reps'];
-      if (s.partial_reps && s.exercise !== 'dual_task') result.push(el('div', { className: 'muted', textContent: `${s.partial_reps} ${s.exercise === 'finger_opposition' ? 'missed' : 'partial'}` }));
+      const finger = s.exercise === 'finger_opposition';
+      const dual = s.exercise === 'dual_task';
+      const thinking = COGNITIVE.includes(s.exercise);
+      const unit = dual || thinking ? 'correct answers' : finger ? 'touches' : 'repetitions';
+      const reps = [el('b', { textContent: `${s.reps} of ${s.target_reps ?? '?'}` }), el('span', { className: 'sub', textContent: unit })];
+      if (s.partial_reps && !dual && !thinking) reps.push(el('span', { className: 'sub', textContent: `${s.partial_reps} ${finger ? 'missed' : 'not deep enough'}` }));
 
-      const movement = [];
-      if (s.exercise === 'dual_task' && s.dual) {
-        const dd = s.dual;
-        if (dd.dual_in_zone_pct != null) movement.push(`on target ${dd.dual_in_zone_pct}% with questions` +
-          (dd.baseline_in_zone_pct != null ? ` (${dd.baseline_in_zone_pct}% alone)` : ''));
-        if (dd.cost_pct != null) movement.push(`dual-task cost ${dd.cost_pct}%`);
-        if (dd.accuracy_pct != null) movement.push(`answers ${dd.accuracy_pct}%` + (dd.mean_rt_sec != null ? `, ${dd.mean_rt_sec}s` : ''));
-      } else if (s.exercise === 'finger_opposition') {
-        if (s.accuracy_pct != null) movement.push(`accuracy ${s.accuracy_pct}%`);
-      } else if (s.lowest_angle != null) {
-        movement.push(`${deg(s.lowest_angle)}–${deg(s.highest_angle)}`);
-      }
-      if (s.duration_sec != null) movement.push(`${Math.round(s.duration_sec)} s`);
-
-      const status = [];
-      if (s.pain) status.push(el('span', { className: 'tag warn', textContent: 'Pain stop' }));
-      else if (s.completed) status.push(el('span', { className: 'tag', textContent: 'Completed' }));
-      else status.push(el('span', { className: 'tag grey', textContent: 'Stopped early' }));
-      if (s.out_of_range > 0) status.push(el('span', { className: 'tag amber', textContent: `⚠ ${s.out_of_range}× past limit` }));
-      if (s.breaks > 0) status.push(el('span', { className: 'tag grey', title: 'Breathing break suggested because movement quality dropped',
-                                                 textContent: `☕ ${s.breaks} break${s.breaks > 1 ? 's' : ''}` }));
-
-      const cell = el('td', {}, status);
-      if (s.reviewed_at) {
-        cell.append(el('div', { className: 'note', textContent: '✓ Reviewed' + (s.doctor_note ? ': ' + s.doctor_note : '') }));
+      const moveCell = el('td');
+      const line = text => moveCell.append(el('span', { className: 'sub', textContent: text }));
+      if (dual && s.dual) {
+        const d = s.dual;
+        moveCell.append(d.dual_in_zone_pct != null ? `On target ${d.dual_in_zone_pct}% while answering` : '–');
+        if (d.baseline_in_zone_pct != null) line(`${d.baseline_in_zone_pct}% when only holding`);
+        if (d.cost_pct != null) line(`Thinking cost ${d.cost_pct}%`);
+        if (d.mean_rt_sec != null) line(`Answers in ${d.mean_rt_sec} s on average`);
+      } else if (thinking) {
+        moveCell.append(s.accuracy_pct != null ? `${s.accuracy_pct}% correct` : '–');
+        if (s.input) line(s.input === 'mouse' ? 'Answered with the mouse' : 'Answered with head movements');
+      } else if (finger) {
+        moveCell.append(s.accuracy_pct != null ? `${s.accuracy_pct}% correct finger` : '–');
+        if (s.finger?.hardest_finger) line(`Hardest: ${s.finger.hardest_finger} finger`);
       } else {
-        const note = el('input', { placeholder: s.needs_review ? 'Note for the patient (optional)' : 'Add a note (optional)', maxLength: 2000 });
+        moveCell.append(s.lowest_angle != null ? `${deg(s.lowest_angle)} to ${deg(s.highest_angle)}` : '–');
+      }
+      if (s.duration_sec != null) line(`${Math.round(s.duration_sec)} seconds`);
+
+      const out = el('td');
+      if (s.pain) out.append(el('span', { className: 'st-pain', textContent: 'Stopped: pain' }));
+      else if (s.completed) out.append(el('span', { className: 'st-ok', textContent: 'Completed' }));
+      else out.append(el('span', { className: 'st-stop', textContent: 'Stopped early' }));
+      if (s.out_of_range > 0) out.append(el('span', { className: 'st-limit', textContent: `Went past the limit ${s.out_of_range} time${s.out_of_range > 1 ? 's' : ''}` }));
+      if (s.breaks > 0) out.append(el('span', { className: 'sub', textContent: `Took ${s.breaks} breathing break${s.breaks > 1 ? 's' : ''}` }));
+
+      if (s.reviewed_at) {
+        const r = el('span', { className: 'reviewed', textContent: 'Reviewed' });
+        if (s.doctor_note) { r.append(': '); r.append(el('q', { textContent: s.doctor_note })); }
+        out.append(r);
+      } else {
+        const note = el('input', { placeholder: 'Note for the patient (optional)', maxLength: 2000, ariaLabel: 'Note for the patient' });
         const btn = el('button', { className: s.needs_review ? 'primary' : '', textContent: s.needs_review ? 'Mark reviewed' : 'Send note' });
         btn.onclick = async () => {
+          if (!s.needs_review && !note.value.trim()) { note.focus(); return; }
           btn.disabled = true;
           try {
             await api(`/api/doctor/sessions/${s.id}/review`, { method: 'POST', body: JSON.stringify({ note: note.value }) });
@@ -274,15 +339,13 @@
             loadPatients();
           } catch (err) { alert(err.message); btn.disabled = false; }
         };
-        cell.append(el('div', { className: 'review' }, [note, btn]));
+        out.append(el('div', { className: 'review' }, [note, btn]));
       }
 
+      const exCell = el('td', {}, [EX_NAMES[s.exercise] || s.exercise]);
+      if (s.side && !thinking) exCell.append(el('span', { className: 'sub', textContent: `${s.side} ${finger ? 'hand' : 'arm'}` }));
       body.append(el('tr', { className: s.needs_review ? 'flag' : '' }, [
-        el('td', { textContent: fmt(s.created_at) }),
-        el('td', {}, [EX_NAMES[s.exercise] || s.exercise, s.side ? el('div', { className: 'muted', textContent: s.side }) : null]),
-        el('td', {}, result),
-        el('td', { textContent: movement.join(' · ') || '—' }),
-        cell,
+        el('td', { textContent: when(s.created_at), style: 'white-space:nowrap' }), exCell, el('td', {}, reps), moveCell, out,
       ]));
     }
   }
@@ -296,36 +359,37 @@
         el('label', { htmlFor: id(name), textContent: label }),
         el('input', { id: id(name), type: 'number', value: value ?? '', min: name === 'reps' ? 1 : 0, max: name === 'reps' ? 100 : 180 }),
       ]);
-      const side = el('select', { id: id('side') }, ['auto', 'left', 'right'].map(v => el('option', { value: v, textContent: v[0].toUpperCase() + v.slice(1) })));
+      const angles = !['finger_opposition', 'finger_tap'].includes(rx.exercise);
+      const side = el('select', { id: id('side') }, [['auto', 'Either'], ['left', 'Left'], ['right', 'Right']].map(([v, t]) => el('option', { value: v, textContent: t })));
       side.value = rx.side || 'auto';
-      const isCurlLike = !['finger_opposition', 'finger_tap'].includes(rx.exercise);
-      const fields = isCurlLike
-        ? [field('rest_angle', 'Rest angle (°)', rx.rest_angle), field('target_angle', 'Target angle (°)', rx.target_angle),
-           field('safe_limit', 'Safe limit (°)', rx.safe_limit)]
-        : [el('div', {}), el('div', {}), el('div', {})];
-      const msg = el('div', { className: 'rxmsg muted', textContent: rx.updated_at ? `Last changed ${fmt(rx.updated_at)}` : 'Standard plan (not changed yet)' });
-      const save = el('button', { className: 'primary', textContent: 'Save' });
+      const fields = angles
+        ? [field('rest_angle', 'Start at (°)', rx.rest_angle), field('target_angle', 'Target (°)', rx.target_angle),
+           field('safe_limit', 'Never past (°)', rx.safe_limit), field('reps', 'Repetitions', rx.reps)]
+        : [field('reps', 'Touches', rx.reps)];
+      fields.push(el('div', {}, [el('label', { htmlFor: id('side'), textContent: angles ? 'Arm' : 'Hand' }), side]));
+
+      const msg = el('span', { className: 'rxmsg', textContent: rx.updated_at ? `Changed ${when(rx.updated_at)}` : 'Standard plan' });
+      const save = el('button', { className: 'primary', textContent: 'Save prescription' });
       save.onclick = async () => {
         const body = { reps: $(id('reps')).value, side: $(id('side')).value };
-        if (isCurlLike) Object.assign(body, { rest_angle: $(id('rest_angle')).value, target_angle: $(id('target_angle')).value, safe_limit: $(id('safe_limit')).value });
+        if (angles) Object.assign(body, { rest_angle: $(id('rest_angle')).value, target_angle: $(id('target_angle')).value, safe_limit: $(id('safe_limit')).value });
         save.disabled = true;
         try {
           await api(`/api/doctor/patients/${selected}/prescriptions/${key}`, { method: 'POST', body: JSON.stringify(body) });
           await loadDetail();
         } catch (err) {
-          msg.textContent = '✗ ' + err.message;
-          msg.style.color = 'var(--red)';
+          msg.textContent = err.message;
+          msg.className = 'rxmsg bad';
           save.disabled = false;
         }
       };
       box.append(el('div', { className: 'rx' }, [
-        el('b', { textContent: EX_NAMES[rx.exercise] || key }),
-        el('div', { className: 'muted', style: 'font-size:12px', textContent: isCurlLike
-          ? (rx.exercise === 'elbow_curl' ? 'The angle gets smaller as the elbow bends, so the safe limit must be below the target.' : 'The safe limit must be beyond the target.')
-          : 'Touch detection thresholds are fixed; set the number of touches and the hand.' }),
-        el('div', { className: 'rx-grid' }, [...fields, field('reps', isCurlLike ? 'Repetitions' : 'Touches', rx.reps),
-                                              el('div', {}, [el('label', { htmlFor: id('side'), textContent: isCurlLike ? 'Arm' : 'Hand' }), side])]),
-        save, msg,
+        el('h3', { textContent: EX_NAMES[rx.exercise] || key }),
+        el('p', { className: 'why', textContent: rx.exercise === 'elbow_curl'
+          ? 'The elbow angle gets smaller as the arm bends, so the limit must be lower than the target.'
+          : angles ? 'The limit must be beyond the target.' : 'Touch detection is fixed. Set how many touches and which hand.' }),
+        el('div', { className: 'rx-grid' }, fields),
+        el('div', { className: 'rx-foot' }, [save, msg]),
       ]));
     }
   }
@@ -336,8 +400,8 @@
     const box = $('msgs');
     const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 40;
     box.innerHTML = '';
-    if (!messages.length) box.append(el('div', { className: 'muted', style: 'font-size:13px', textContent: 'No messages yet.' }));
-    messages.forEach(m => box.append(el('div', { className: 'msg ' + (m.mine ? 'mine' : 'them') }, [m.body, el('small', { textContent: fmt(m.created_at) })])));
+    if (!messages.length) box.append(el('p', { className: 'empty', textContent: 'No messages yet. Anything you write here shows up in the patient’s app.' }));
+    messages.forEach(m => box.append(el('div', { className: 'msg ' + (m.mine ? 'mine' : 'them') }, [m.body, el('time', { textContent: when(m.created_at) })])));
     if (atBottom || box.dataset.patient !== String(selected)) box.scrollTop = box.scrollHeight;
     box.dataset.patient = selected;
   }
@@ -361,15 +425,14 @@
   // ---- start ----
   (async () => {
     const me = await api('/api/auth/me');
-    $('me').textContent = `${me.user.name} · ${me.user.email}`;
+    $('me').textContent = me.user.name;
     await loadPatients();
     if (patients.length) select(patients[0].id);
     setInterval(async () => {          // new sessions and messages show up without reloading
       try {
         await loadPatients();
-        if (selected && document.activeElement?.tagName !== 'INPUT' && document.activeElement?.tagName !== 'TEXTAREA') {
-          await loadDetail();
-        }
+        const typing = ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName);
+        if (selected && !typing) await loadDetail();
         if (selected) await loadMessages();
       } catch (_) {}
     }, 10000);
