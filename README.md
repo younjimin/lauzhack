@@ -6,13 +6,13 @@ with a physiotherapist dashboard. Built for the IMChange Tech for Good hackathon
 > ⚠️ Training aid from a webcam estimate — **not a medical device and not a clinical measurement.**
 
 ## Demo
-▶️ [Watch the 2-minute demo](https://youtube.com/...)   <!-- 영상 링크로 교체 -->
+NOT YET
 
 ## Run it locally
 Requirements: Python 3.10+ and a webcam.
 
 ```bash
-git clone https://github.com/<team>/<repo>.git     # 저장소 주소로 교체
+git clone https://github.com/<team>/<repo>.git    
 cd <repo>
 python -m venv .venv
 source .venv/bin/activate          # Windows: .venv\Scripts\activate
