@@ -129,6 +129,8 @@
     nav button.active {
       background: var(--soft);
       color: var(--green);
+      font-weight: 800;
+      box-shadow: inset 4px 0 0 var(--green);
     }
 
     main {
@@ -797,15 +799,14 @@
     <div class="brand" aria-label="ability plus">ability<span class="plus" aria-hidden="true">+</span></div>
 
     <nav aria-label="Main">
-      <button class="active" data-page="overview">🏠 Overview</button>
-      <button data-page="session">💪 Movement</button>
-      <button data-page="cognitive">🧠 Thinking</button>
-      <button data-page="dual">🤹 Both at once</button>
-      <button data-page="progress">📈 My progress</button>
+      <button class="active" data-page="overview">Movement</button>
+      <button data-page="cognitive">Thinking</button>
+      <button data-page="dual">Both at once</button>
+      <button data-page="progress">My progress</button>
     </nav>
 
     <nav style="margin-top:14px;padding-top:10px;border-top:1px solid var(--line)" aria-label="Account">
-      <button data-page="settings">⚙️ Settings</button>
+      <button data-page="settings">Settings</button>
     </nav>
   </aside>
 
@@ -855,7 +856,6 @@
         <div class="card">
           <h2>Your exercises</h2>
           <div id="plan-list"></div>
-          <button class="primary" data-go="session" style="margin-top:12px">Begin</button>
         </div>
 
         <div class="card">
@@ -866,7 +866,7 @@
       </div>
 
       <div class="feedback">
-        Stop if you feel pain, dizziness or unusual discomfort.
+        Stop if you feel discomfort, dizziness or anything unusual.
       </div>
     </section>
 
@@ -899,7 +899,6 @@
             <button id="stop" disabled>Turn camera off</button>
           </div>
           <div class="toolbar-group">
-            <button id="voice-toggle" aria-pressed="true" title="Read feedback and corrections aloud">Voice on</button>
             <button id="demo-open" aria-haspopup="dialog">Show me how</button>
           </div>
         </div>
@@ -946,8 +945,8 @@
 
         <div class="controls" style="margin-top:16px">
           <button class="primary" id="start" disabled>Start</button>
-          <button id="finish" disabled>Stop and save</button>
-          <button class="danger" id="pain" disabled>I feel pain, stop</button>
+          <button id="finish" disabled>Finish and save</button>
+          <button class="danger" id="pain" disabled>Stop</button>
         </div>
 
         <div class="feedback" id="camera-status" aria-live="polite">
@@ -1079,7 +1078,7 @@
 
       <div class="card">
         <h2>Recent results</h2>
-        <div class="muted">How much of the target you reached in your last 10 sessions. Red means pain or going past the limit.</div>
+        <div class="muted">How much of the target you reached in your last 10 sessions. Red means stopped early or went past the limit.</div>
         <div class="chart" id="results-chart" style="height:190px"></div>
       </div>
 
@@ -1120,7 +1119,7 @@
 
         <div class="no-print" style="margin-top:14px">
           <label for="doctor-note-field" class="muted" style="display:block;font-size:13px">Note for doctor / physiotherapist (optional)</label>
-          <input id="doctor-note-field" class="doctor-note-input" type="text" placeholder="e.g., Mild stiffness in left elbow in the morning, no sharp pain...">
+          <input id="doctor-note-field" class="doctor-note-input" type="text" placeholder="e.g., Mild stiffness in left elbow in the morning...">
         </div>
       </div>
 
@@ -1279,11 +1278,11 @@
         <text x="250" y="41" class="cog-item-text">Apple</text>
 
         <rect id="cog-box-left" x="16" y="102" width="114" height="44" rx="10" class="cog-choice-box"/>
-        <text x="73" y="119" class="cog-dir-label">◀ LEFT</text>
+        <text x="73" y="119" class="cog-dir-label">← LEFT</text>
         <text x="73" y="136" class="cog-item-text">Banana</text>
 
         <rect id="cog-box-right" x="370" y="102" width="114" height="44" rx="10" class="cog-choice-box"/>
-        <text x="427" y="119" class="cog-dir-label">▶ RIGHT</text>
+        <text x="427" y="119" class="cog-dir-label">RIGHT →</text>
         <text x="427" y="136" class="cog-item-text">Carrot</text>
 
         <rect id="cog-box-down" x="190" y="196" width="120" height="42" rx="10" class="cog-choice-box"/>
@@ -1381,10 +1380,10 @@
         <text x="366" y="44" class="cog-dir-label">▲ UP</text>
 
         <rect id="dual-box-left" x="244" y="106" width="76" height="28" rx="7" class="cog-choice-box"/>
-        <text x="282" y="124" class="cog-dir-label">◀ LEFT</text>
+        <text x="282" y="124" class="cog-dir-label">← LEFT</text>
 
         <rect id="dual-box-right" x="412" y="106" width="76" height="28" rx="7" class="cog-choice-box"/>
-        <text x="450" y="124" class="cog-dir-label">▶ RIGHT</text>
+        <text x="450" y="124" class="cog-dir-label">RIGHT →</text>
 
         <rect id="dual-box-down" x="326" y="190" width="80" height="28" rx="7" class="cog-choice-box"/>
         <text x="366" y="208" class="cog-dir-label">▼ DOWN</text>
@@ -1428,7 +1427,7 @@
   // --------------------------------------------------
 
   const pages = {
-    overview: ['Your plan', 'Set by your physiotherapist. Go at your own pace.'],
+    overview: ['Movement', 'Set by your physiotherapist. Go at your own pace.'],
     session: ['Movement exercises', 'The camera counts each repetition and warns you before you go too far.'],
     progress: ['My progress', 'Every session you finish is saved to your account.'],
     settings: ['Settings', 'Make the app easier to see and hear.']
@@ -1440,8 +1439,9 @@
       page.classList.toggle('active', page.id === id);
     });
 
+    const menuId = id === 'session' ? 'overview' : id;      // the exercise screen belongs to "Movement"
     document.querySelectorAll('[data-page]').forEach(button => {
-      button.classList.toggle('active', button.dataset.page === id);
+      button.classList.toggle('active', button.dataset.page === menuId);
     });
 
     $('eyebrow').textContent = '';
@@ -1565,7 +1565,7 @@
         statusBox.classList.add('stopped-banner');
       } else if (sessionState === 'pain') {
         badge.className = 'tag pain';
-        badge.textContent = 'Stopped: pain';
+        badge.textContent = 'Stopped';
         painBtn.classList.add('triggered');
         statusBox.classList.add('warn');
       } else if (sessionState === 'completed') {
@@ -1654,9 +1654,6 @@
 
   function setVoiceUI(on) {
     $('audio').checked = on;
-    const b = $('voice-toggle');
-    b.textContent = on ? 'Voice on' : 'Voice off';
-    b.setAttribute('aria-pressed', String(on));
     try { localStorage.setItem('gem_voice', on ? '1' : '0'); } catch (_) {}
     if (!on) resetVoice();
   }
@@ -2004,7 +2001,7 @@
     tag.textContent = {
       completed: 'Completed',
       manual: 'Stopped and saved',
-      pain: 'Stopped: pain'
+      pain: 'Stopped'
     }[reason] || 'Saved';
 
     let items = [
@@ -2098,8 +2095,8 @@
 
     if (reason === 'pain') {
       updateSessionControlsUI('pain');
-      say('Exercise stopped because of pain. Rest, and tell your physiotherapist.', true);
-      status('Session stopped: pain reported. Summary saved below.');
+      say('Exercise stopped. Rest, and tell your physiotherapist how you feel.', true);
+      status('Session stopped. Summary saved below.');
     } else if (reason === 'completed') {
       updateSessionControlsUI('completed');
       say('Target reached! Review your session summary below.');
@@ -2228,7 +2225,7 @@
       const completedCount = daySessions.filter(s => s.completed).length;
       const repsSum = daySessions.reduce((sum, s) => sum + Number(s.reps || 0), 0);
       const flags = [];
-      if (daySessions.some(s => s.pain)) flags.push('pain stop');
+      if (daySessions.some(s => s.pain)) flags.push('stopped');
       if (daySessions.some(s => Number(s.out_of_range || 0) > 0)) flags.push('range limit');
       const flagSuffix = flags.length ? ` [${flags.join(', ')}]` : '';
 
@@ -2308,7 +2305,7 @@
     }
     const painOrLimit = S.filter(s => s.pain || Number(s.out_of_range || 0) > 0).length;
     if (painOrLimit > 0) {
-      focus.push(`${painOrLimit} session${painOrLimit > 1 ? 's' : ''} involved pain or range-limit alerts — review safe angle/range with doctor.`);
+      focus.push(`${painOrLimit} session${painOrLimit > 1 ? 's' : ''} were stopped or had range-limit alerts — review safe angle/range with doctor.`);
     }
     const incomplete = S.length - completedSessions.length;
     if (incomplete > 0) {
@@ -2387,7 +2384,7 @@
       }
       const tag = document.createElement('span');
       tag.className = s.pain ? 'tag pain' : s.completed ? 'tag done' : 'tag idle';
-      tag.textContent = s.pain ? 'Pain stop' : s.completed ? 'Completed' : 'Stopped early';
+      tag.textContent = s.pain ? 'Stopped' : s.completed ? 'Completed' : 'Stopped early';
       item.append(text, tag);
       recent.append(item);
     });
@@ -2483,7 +2480,7 @@
     const lines = HISTORY.slice().reverse().map(s => [
       s.created_at, LABELS[s.exercise] || s.exercise, `${s.reps} of ${s.target_reps ?? '?'}`,
       s.duration_sec != null ? `${Math.round(s.duration_sec)} s` : '',
-      s.pain ? 'stopped: pain' : s.completed ? 'completed' : 'stopped early',
+      s.pain ? 'stopped' : s.completed ? 'completed' : 'stopped early',
       s.doctor_note ? `physiotherapist note: ${s.doctor_note}` : ''
     ].filter(Boolean).join(' | '));
     const report = ['ability+ history', '', 'Angles are webcam estimates, not clinical measurements.',
@@ -3273,11 +3270,6 @@
   });
 
   $('audio').addEventListener('change', event => setVoiceUI(event.target.checked));
-  $('voice-toggle').addEventListener('click', () => {
-    const on = !$('audio').checked;
-    setVoiceUI(on);
-    if (on) speak('Voice feedback on.', 'info');
-  });
 
   // --------------------------------------------------
   // INITIALISE

@@ -5,7 +5,7 @@
  * 1. Dual-task training: hold a posture (arm curl at the prescribed angle, or an open hand)
  *    first alone, then while answering two-choice questions by tilting the head (or clicking).
  *    Backend: /api/dual/start | state | answer | stop  (rehab_modes.DualTaskSession)
- * 2. Guided breathing break (60 s): opens after a Pain stop, when the backend reports a sharp drop
+ * 2. Guided breathing break (60 s): opens after the Stop button, when the backend reports a sharp drop
  *    in movement quality (tracking.fatigue_alert), or from the "Breathing break" button.
  *    The physical session is paused meanwhile (/api/session/pause, /api/session/resume).
  */
@@ -160,7 +160,7 @@
     const result = { completed, seconds, tensionReminders: st.tensionReminders };
     const close = () => { breath.hidden = true; bState = null; };
     if (st.opts.trigger === 'pain') {
-      bTip.textContent = 'If the pain continues, rest and let your physiotherapist know.';
+      bTip.textContent = 'If you still feel unwell, rest and let your physiotherapist know.';
       const msgBtn = document.querySelector('#ab-bar .physio');
       breathButtons([
         ...(msgBtn ? [['Message my physiotherapist', () => { close(); msgBtn.click(); st.opts.onEnd?.(result); }, true]] : []),
@@ -181,7 +181,7 @@
     breath.hidden = false;
     breath.classList.toggle('rm-still', reduced());
     bTitle.textContent = opts.trigger === 'pain' ? 'Let’s rest for a minute' : 'Time for a short breathing break';
-    bReason.textContent = opts.trigger === 'pain' ? 'You stopped because of pain. Slow breathing can help you settle.'
+    bReason.textContent = opts.trigger === 'pain' ? 'You stopped the exercise. Slow breathing can help you settle.'
       : opts.trigger === 'fatigue' ? `${opts.reason || 'Your movement quality dropped'}. A short rest usually helps.`
       : 'Take a minute to breathe and reset your posture.';
     bPosture.textContent = '';
@@ -274,7 +274,7 @@
 
   let navBtn = sidebar.querySelector('[data-page="dual"]');     // the menu item lives in gem.html
   if (!navBtn) {
-    navBtn = el('button', { textContent: '🤹 Both at once' });
+    navBtn = el('button', { textContent: 'Both at once' });
     navBtn.dataset.page = 'dual';
     sidebar.querySelector('nav')?.append(navBtn);
   }
@@ -299,8 +299,8 @@
             <option value="hand_open">Open hand hold</option>
           </select>
           <select id="rm-answer" aria-label="How to answer">
-            <option value="head">Answer with head or mouse</option>
-            <option value="click">Answer with mouse or arrow keys</option>
+            <option value="head">Answer with head movement</option>
+            <option value="click">Answer with mouse clicking</option>
           </select>
           <select id="rm-count" aria-label="Number of questions">
             <option value="4">4 questions</option><option value="6" selected>6 questions</option><option value="8">8 questions</option>
@@ -309,8 +309,8 @@
         <div class="toolbar-group">
           <button class="primary" id="rm-connect">Connect camera</button>
           <button class="primary" id="rm-start" disabled>Start</button>
-          <button id="rm-stop" disabled>Stop and save</button>
-          <button class="danger" id="rm-pain" disabled>I feel pain, stop</button>
+          <button id="rm-stop" disabled>Finish and save</button>
+          <button class="danger" id="rm-pain" disabled>Stop</button>
         </div>
       </div>
     </div>
@@ -538,11 +538,11 @@
     let res = {};
     try { res = await post('/api/dual/stop', { reason }); } catch (e) { console.error(e); }
     const s = res.summary;
-    $('rm-phase').textContent = reason === 'pain' ? 'Stopped: pain' : PHASE_TEXT[reason === 'completed' ? 'done' : 'stopped'];
+    $('rm-phase').textContent = reason === 'pain' ? 'Stopped' : PHASE_TEXT[reason === 'completed' ? 'done' : 'stopped'];
     $('rm-opt-left').disabled = $('rm-opt-right').disabled = true;
     if (s) showSummary(s, reason);
     if (reason === 'pain') {
-      talk('Stopped because of pain.', 'alert');
+      talk('Stopped.', 'alert');
       openBreathing({ trigger: 'pain' });
     }
   }
@@ -551,7 +551,7 @@
 
   function showSummary(s, reason) {
     const d = s.dual_task, c = d.cognitive, pct = v => (v == null ? '–' : `${v}%`);
-    $('rm-summary-tag').textContent = { completed: 'Completed', manual: 'Stopped and saved', pain: 'Stopped: pain' }[reason] || 'Saved';
+    $('rm-summary-tag').textContent = { completed: 'Completed', manual: 'Finished and saved', pain: 'Stopped' }[reason] || 'Saved';
     const items = [
       ['On target, holding only', pct(d.baseline.in_zone_pct)],
       ['On target, while answering', pct(d.dual.in_zone_pct)],

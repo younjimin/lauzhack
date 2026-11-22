@@ -52,7 +52,7 @@ Prescriptions for the web app are in `PRESCRIPTIONS` at the top of `main.py` (la
 The raw "Left Hand / Right Hand" text is no longer drawn on the video; the overlay shows `Tracking: RIGHT` (the side the analyzer uses).
 
 ## Voice feedback (frontend/gem.html)
-On by default (🔊 button on the exercise screen, or Settings → Audio feedback). Mistakes and safety messages (`in_danger`, `finger_metrics.in_error`, pain) are spoken at once, never cut off, and repeated every 4 s while they last; normal coaching waits until the current sentence has finished.
+On by default (turn it off in Settings → Audio feedback). Mistakes and safety messages (`in_danger`, `finger_metrics.in_error`, pain) are spoken at once, never cut off, and repeated every 4 s while they last; normal coaching waits until the current sentence has finished.
 
 ## Dual-task mode (rehab_modes.py + frontend/rehab-modes.js)
 The patient holds a posture and answers simple questions at the same time.
@@ -80,8 +80,8 @@ The patient holds a posture and answers simple questions at the same time.
 ## Guided breathing & fatigue recovery
 - A 60 s breathing break: circle grows for 4 s in, shrinks for 6 s out, with spoken cues and a progress bar.
 - **When it starts:**
-  1. After **Pain — stop now**.
-  2. From the **☕ Breathing break** button.
+  1. After the red **Stop** button.
+  2. From the **Breathing break** button.
   3. **Automatically** when the movement quality drops (`FatigueMonitor`).
 - **Fatigue triggers (prototype thresholds):**
   - **Arm curl:** the last 2 reps reach < 70% of the first reps' range; or they take > 1.7× as long; or there are 2 partial reps in a row.
@@ -91,7 +91,7 @@ The patient holds a posture and answers simple questions at the same time.
   - The shoulder check uses the shoulder–ear distance. When the shoulders rise, it says "Your shoulders look raised — let them drop".
 - **After the break:**
   - Continue or End session; after pain, "Message my physiotherapist".
-  - Breaks are saved in `summary.breaks`; the physio page shows "☕ N break(s)".
+  - Breaks are saved in `summary.breaks`; the physio page shows "Took N breathing break(s)".
 - New `/api/tracking` fields: `paused`, `fatigue_alert {id, reason, message}`, `shoulder_ratio`, `dual_active`.
 
 These are training aids from a webcam estimate, **not clinical measurements**. All thresholds are prototype values for the physio to adjust.

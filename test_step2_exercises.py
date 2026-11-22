@@ -1,6 +1,6 @@
 """
 test_step2_exercises.py — pure-Python tests for the exercises used by the web app
-(elbow_curl, finger_tap), the left/right mirroring rules and the Flask API
+(elbow_curl and finger_tap), the left/right mirroring rules and the Flask API
 (login, SQL storage, prescriptions, sessions, review notes, messages).
 
     python test_step2_exercises.py
@@ -153,6 +153,7 @@ try:
     os.environ["GEM_DB"] = os.path.join(tmp, "test.db")
     os.environ["GEM_DEMO"] = "0"
     import main as app_module
+    app_module.SESSION_DIR = os.path.join(tmp, "sessions")
 
     patient = app_module.app.test_client()
     doctor = app_module.app.test_client()
@@ -230,7 +231,7 @@ try:
     unread_after = patient.get("/api/messages/unread").get_json()["total"]
     stranger = other_doctor.post(f"/api/messages/{pid}", json={"body": "hi"}).status_code
     empty = patient.post(f"/api/messages/{did}", json={"body": "  "}).status_code
-    check("13. Messages: doctor ↔ patient, unread → read, strangers blocked, empty rejected",
+    check("13. Messages: doctor <-> patient, unread → read, strangers blocked, empty rejected",
           m1 == 200 and m2 == 200 and unread == 1 and unread_after == 0 and [m["body"] for m in thread] ==
           ["How is the elbow today?", "Better, thanks!"] and thread[1]["mine"] and stranger == 403 and empty == 400,
           f"unread before={unread} after={unread_after} thread={len(thread)} stranger={stranger}")

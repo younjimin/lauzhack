@@ -164,8 +164,8 @@
       <dl class="figures">
         <div><dt>Sessions this week</dt><dd id="m-week">0</dd><small id="m-days"></small></div>
         <div><dt>Reached the target</dt><dd id="m-comp">–</dd><small id="m-total"></small></div>
-        <div><dt>Pain reported</dt><dd id="m-pain">0</dd><small>All sessions</small></div>
-        <div><dt>Waiting for your review</dt><dd id="m-review">0</dd><small>Pain or went past the limit</small></div>
+        <div><dt>Stop button used</dt><dd id="m-pain">0</dd><small>All sessions</small></div>
+        <div><dt>Waiting for your review</dt><dd id="m-review">0</dd><small>Stop button or went past the limit</small></div>
       </dl>
 
       <section>
@@ -317,9 +317,9 @@
       if (s.duration_sec != null) line(`${Math.round(s.duration_sec)} seconds`);
 
       const out = el('td');
-      if (s.pain) out.append(el('span', { className: 'st-pain', textContent: 'Stopped: pain' }));
+      if (s.pain) out.append(el('span', { className: 'st-pain', textContent: 'Stopped with the Stop button' }));
       else if (s.completed) out.append(el('span', { className: 'st-ok', textContent: 'Completed' }));
-      else out.append(el('span', { className: 'st-stop', textContent: 'Stopped early' }));
+      else out.append(el('span', { className: 'st-stop', textContent: 'Finished early' }));
       if (s.out_of_range > 0) out.append(el('span', { className: 'st-limit', textContent: `Went past the limit ${s.out_of_range} time${s.out_of_range > 1 ? 's' : ''}` }));
       if (s.breaks > 0) out.append(el('span', { className: 'sub', textContent: `Took ${s.breaks} breathing break${s.breaks > 1 ? 's' : ''}` }));
 
