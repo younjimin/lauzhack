@@ -18,9 +18,9 @@
   #ab-bar .name .plus { display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 4px; background: var(--brand);
     color: #fff; font-size: 13px; line-height: 1; margin-right: 6px; }
   #ab-bar button { cursor: pointer; }
-  #ab-bar button.physio { background: var(--brand); color: #fff; font-weight: 700; }
+  #ab-bar button.physio { background: none; color: inherit; font-weight: 400; }
   #ab-bar button:hover { text-decoration: underline; }
-  #ab-bar .count { background: #fff; color: var(--brand); border-radius: 9px; padding: 0 6px; margin-left: 6px; font-size: 13px; }
+  #ab-bar .count { background: var(--brand); color: #fff; border-radius: 9px; padding: 0 6px; margin-left: 6px; font-size: 13px; }
   #ab-bar button:focus-visible, #ab-panel button:focus-visible, #ab-panel textarea:focus-visible { outline: 3px solid var(--focus); outline-offset: -3px; }
   #ab-panel { position: fixed; top: 0; right: 0; bottom: 0; width: min(430px, 100vw); background: #fff; z-index: 60;
     border-left: 1.5px solid var(--rule); display: flex; flex-direction: column; font-size: 16px; line-height: 1.5;

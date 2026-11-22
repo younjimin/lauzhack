@@ -54,10 +54,10 @@
   };
 
   // ---- bar ----
-  const physioBtn = el('button', { type: 'button', textContent: '💬 My physiotherapist' });
+  const physioBtn = el('button', { type: 'button', textContent: 'My physiotherapist' });
   const badge = el('span', { className: 'badge', hidden: true });
   physioBtn.append(badge);
-  const nameBtn = el('button', { type: 'button', disabled: true, textContent: '👤 …' });
+  const nameBtn = el('button', { type: 'button', disabled: true, textContent: '…' });
   nameBtn.style.cursor = 'default';
   const outBtn = el('button', { type: 'button', textContent: 'Log out' });
   document.body.append(el('div', { id: 'gem-acct' }, [nameBtn, physioBtn, outBtn]));
@@ -84,7 +84,7 @@
 
   async function render() {
     const ov = await api('/api/patient/overview');
-    nameBtn.textContent = '👤 ' + ov.user.name;
+    nameBtn.textContent = ov.user.name;
     doctor = ov.doctors[0] || null;
     content.innerHTML = '';
     input.disabled = send.disabled = !doctor;
@@ -161,7 +161,7 @@
     window.location.href = '/login';
   };
 
-  api('/api/auth/me').then(d => { if (d.user) nameBtn.textContent = '👤 ' + d.user.name; });
+  api('/api/auth/me').then(d => { if (d.user) nameBtn.textContent = d.user.name; });
   refreshBadge();
   setInterval(() => (open ? render() : refreshBadge()).catch(() => {}), 15000);
 })();

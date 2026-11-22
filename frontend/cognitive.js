@@ -16,10 +16,10 @@
       skill: "Categorisation",
       prompt: "Identify the item that does not belong to the group:",
       options: [
-        { icon: "🍎", label: "Apple", sub: "Fruit" },
-        { icon: "🍌", label: "Banana", sub: "Fruit" },
-        { icon: "🥕", label: "Carrot", sub: "Root vegetable" },
-        { icon: "🍊", label: "Orange", sub: "Fruit" }
+        { label: "Apple", sub: "Fruit" },
+        { label: "Banana", sub: "Fruit" },
+        { label: "Carrot", sub: "Root vegetable" },
+        { label: "Orange", sub: "Fruit" }
       ],
       answerIdx: 2,
       explanation: "Carrot is a root vegetable, while Apple, Banana, and Orange are fruits."
@@ -29,10 +29,10 @@
       skill: "Categorisation",
       prompt: "Which item does not belong with the others?",
       options: [
-        { icon: "🎻", label: "Violin", sub: "String instrument" },
-        { icon: "🎸", label: "Guitar", sub: "String instrument" },
-        { icon: "🥁", label: "Drum", sub: "Percussion" },
-        { icon: "🎹", label: "Harp", sub: "String instrument" }
+        { label: "Violin", sub: "String instrument" },
+        { label: "Guitar", sub: "String instrument" },
+        { label: "Drum", sub: "Percussion" },
+        { label: "Harp", sub: "String instrument" }
       ],
       answerIdx: 2,
       explanation: "Drum is a percussion instrument, whereas Violin, Guitar, and Harp are string instruments."
@@ -42,10 +42,10 @@
       skill: "Analytical Thinking",
       prompt: "Find the number that breaks the pattern:",
       options: [
-        { icon: "2️⃣", label: "2", sub: "Even number" },
-        { icon: "4️⃣", label: "4", sub: "Even number" },
-        { icon: "7️⃣", label: "7", sub: "Odd number" },
-        { icon: "8️⃣", label: "8", sub: "Even number" }
+        { label: "2", sub: "Even number" },
+        { label: "4", sub: "Even number" },
+        { label: "7", sub: "Odd number" },
+        { label: "8", sub: "Even number" }
       ],
       answerIdx: 2,
       explanation: "7 is an odd number; 2, 4, and 8 are all even numbers."
@@ -55,10 +55,10 @@
       skill: "Categorisation",
       prompt: "Which vehicle does not belong in this category?",
       options: [
-        { icon: "🚗", label: "Car", sub: "Land transport" },
-        { icon: "🚌", label: "Bus", sub: "Land transport" },
-        { icon: "⛵", label: "Sailboat", sub: "Water transport" },
-        { icon: "🚲", label: "Bicycle", sub: "Land transport" }
+        { label: "Car", sub: "Land transport" },
+        { label: "Bus", sub: "Land transport" },
+        { label: "Sailboat", sub: "Water transport" },
+        { label: "Bicycle", sub: "Land transport" }
       ],
       answerIdx: 2,
       explanation: "Sailboat travels on water, while Car, Bus, and Bicycle travel on land."
@@ -68,10 +68,10 @@
       skill: "Analytical Thinking",
       prompt: "Spot the geometric shape that differs from the rest:",
       options: [
-        { icon: "🔺", label: "Triangle", sub: "3 straight sides" },
-        { icon: "⬜", label: "Square", sub: "4 straight sides" },
-        { icon: "⭕", label: "Circle", sub: "Curved boundary" },
-        { icon: "⬟", label: "Pentagon", sub: "5 straight sides" }
+        { label: "Triangle", sub: "3 straight sides" },
+        { label: "Square", sub: "4 straight sides" },
+        { label: "Circle", sub: "Curved boundary" },
+        { label: "Pentagon", sub: "5 straight sides" }
       ],
       answerIdx: 2,
       explanation: "Circle has no straight edges or corners, unlike Triangle, Square, and Pentagon."
@@ -81,10 +81,10 @@
       skill: "Problem-Solving",
       prompt: "Which number does not fit the mathematical sequence?",
       options: [
-        { icon: "🔢", label: "9", sub: "3 × 3" },
-        { icon: "🔢", label: "16", sub: "4 × 4" },
-        { icon: "🔢", label: "20", sub: "4 × 5" },
-        { icon: "🔢", label: "25", sub: "5 × 5" }
+        { label: "9", sub: "3 × 3" },
+        { label: "16", sub: "4 × 4" },
+        { label: "20", sub: "4 × 5" },
+        { label: "25", sub: "5 × 5" }
       ],
       answerIdx: 2,
       explanation: "20 is not a perfect square, whereas 9 (3²), 16 (4²), and 25 (5²) are square numbers."
@@ -94,10 +94,10 @@
       skill: "Categorisation",
       prompt: "Identify the object that does not belong:",
       options: [
-        { icon: "🌡️", label: "Thermometer", sub: "Measures temperature" },
-        { icon: "🧭", label: "Compass", sub: "Shows direction" },
-        { icon: "⚖️", label: "Scale", sub: "Measures weight" },
-        { icon: "🔨", label: "Hammer", sub: "Construction tool" }
+        { label: "Thermometer", sub: "Measures temperature" },
+        { label: "Compass", sub: "Shows direction" },
+        { label: "Scale", sub: "Measures weight" },
+        { label: "Hammer", sub: "Construction tool" }
       ],
       answerIdx: 3,
       explanation: "Hammer is a striking tool, while Thermometer, Compass, and Scale are measuring instruments."
@@ -107,10 +107,10 @@
       skill: "Analytical Thinking",
       prompt: "Which word does not share the same logical relationship?",
       options: [
-        { icon: "📖", label: "Chapter", sub: "Part of a book" },
-        { icon: "📄", label: "Page", sub: "Part of a book" },
-        { icon: "📚", label: "Library", sub: "Collection of books" },
-        { icon: "🔖", label: "Index", sub: "Part of a book" }
+        { label: "Chapter", sub: "Part of a book" },
+        { label: "Page", sub: "Part of a book" },
+        { label: "Library", sub: "Collection of books" },
+        { label: "Index", sub: "Part of a book" }
       ],
       answerIdx: 2,
       explanation: "A Library contains many books, whereas Chapter, Page, and Index are parts inside a single book."
@@ -120,10 +120,10 @@
       skill: "Problem-Solving",
       prompt: "Find the outlier in this sequence:",
       options: [
-        { icon: "❄️", label: "Ice", sub: "Solid water" },
-        { icon: "💧", label: "Rain", sub: "Liquid water" },
-        { icon: "☁️", label: "Steam", sub: "Water vapor" },
-        { icon: "🪨", label: "Granite", sub: "Igneous rock" }
+        { label: "Ice", sub: "Solid water" },
+        { label: "Rain", sub: "Liquid water" },
+        { label: "Steam", sub: "Water vapor" },
+        { label: "Granite", sub: "Igneous rock" }
       ],
       answerIdx: 3,
       explanation: "Granite is a rock, whereas Ice, Rain, and Steam are all physical states of water."
@@ -133,10 +133,10 @@
       skill: "Problem-Solving",
       prompt: "Which item breaks the rule of this group?",
       options: [
-        { icon: "🌍", label: "Earth", sub: "Planet" },
-        { icon: "🪐", label: "Saturn", sub: "Planet" },
-        { icon: "☀️", label: "Sun", sub: "Star" },
-        { icon: "🔴", label: "Mars", sub: "Planet" }
+        { label: "Earth", sub: "Planet" },
+        { label: "Saturn", sub: "Planet" },
+        { label: "Sun", sub: "Star" },
+        { label: "Mars", sub: "Planet" }
       ],
       answerIdx: 2,
       explanation: "The Sun is a star at the center of our solar system, while Earth, Saturn, and Mars are planets."
@@ -147,10 +147,10 @@
   // GAME 2: WORKING MEMORY & PATTERN RECALL TILES
   // --------------------------------------------------
   const MEMORY_TILES = [
-    { icon: "🌿", label: "Forest", sub: "Top-Left" },
-    { icon: "🌊", label: "Ocean", sub: "Top-Right" },
-    { icon: "☀️", label: "Sun", sub: "Bottom-Left" },
-    { icon: "⛰️", label: "Mountain", sub: "Bottom-Right" }
+    { label: "Forest", sub: "Top-Left" },
+    { label: "Ocean", sub: "Top-Right" },
+    { label: "Sun", sub: "Bottom-Left" },
+    { label: "Mountain", sub: "Bottom-Right" }
   ];
   const MEMORY_TOTAL_ROUNDS = 6;
 
@@ -413,7 +413,6 @@
       <div class="mode-cards">
         <div class="mode-card">
           <div>
-            <div class="mode-icon" aria-hidden="true">💪</div>
             <h3>Movement</h3>
             <p class="muted">Arm and finger exercises, counted by the camera.</p>
           </div>
@@ -422,7 +421,6 @@
 
         <div class="mode-card">
           <div>
-            <div class="mode-icon" aria-hidden="true">🧠</div>
             <h3>Thinking</h3>
             <p class="muted">Puzzles and memory games, hands-free.</p>
           </div>
@@ -431,7 +429,6 @@
 
         <div class="mode-card">
           <div>
-            <div class="mode-icon" aria-hidden="true">🤹</div>
             <h3>Both at once</h3>
             <p class="muted">Hold a position while answering questions.</p>
           </div>
@@ -454,7 +451,7 @@
     if (!sidebar.querySelector('[data-page="cognitive"]') && firstNav) {
       const cogNavBtn = document.createElement("button");
       cogNavBtn.dataset.page = "cognitive";
-      cogNavBtn.textContent = "🧠 Thinking";
+      cogNavBtn.textContent = "Thinking";
       firstNav.appendChild(cogNavBtn);
     }
 
@@ -490,16 +487,15 @@
 
             <div class="cog-dropdown" id="control-dropdown">
               <button type="button" class="cog-dropdown-trigger" id="control-dropdown-btn" aria-expanded="false">
-                <small>Answer with</small>
-                <span id="control-current-label">Head movements</span>
+                <span id="control-current-label">Answer with head movement</span>
                 <span>▾</span>
               </button>
               <div class="cog-dropdown-menu" id="control-dropdown-menu" hidden>
                 <button type="button" class="cog-dropdown-item selected" data-control-choice="camera">
-                  Head movements (tilt and hold 5 s)
+                  Answer with head movement
                 </button>
                 <button type="button" class="cog-dropdown-item" data-control-choice="mouse">
-                  Mouse
+                  Answer with mouse clicking
                 </button>
               </div>
             </div>
@@ -722,7 +718,7 @@
     // Update dropdown button label (shows ONLY the chosen control)
     const labelEl = $c("control-current-label");
     if (labelEl) {
-      labelEl.textContent = mode === "camera" ? "Head movements" : "Mouse";
+      labelEl.textContent = mode === "camera" ? "Answer with head movement" : "Answer with mouse clicking";
     }
     document.querySelectorAll("[data-control-choice]").forEach(item => {
       item.classList.toggle("selected", item.dataset.controlChoice === mode);
@@ -825,8 +821,7 @@
               class="cog-option ${isCamera && idx === cogFocusIdx ? "focused" : ""} ${isCamera ? "camera-locked" : ""}"
               data-opt-idx="${idx}">
         <div class="cog-option-row">
-          <div class="cog-opt-icon">${opt.icon}</div>
-          <div>
+                    <div>
             <b style="font-size:17px">${opt.label}</b>
             <div class="muted" style="font-size:13px">${opt.sub}</div>
           </div>
@@ -898,8 +893,7 @@
               class="cog-option ${isCamera && idx === cogFocusIdx ? "focused" : ""} ${cogInputMode === "camera" ? "camera-locked" : ""}"
               data-opt-idx="${idx}">
         <div class="cog-option-row">
-          <div class="cog-opt-icon">${tile.icon}</div>
-          <div>
+                    <div>
             <b style="font-size:17px">${tile.label}</b>
             <div class="muted" style="font-size:13px">${tile.sub}</div>
           </div>
