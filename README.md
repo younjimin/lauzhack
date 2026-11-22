@@ -47,5 +47,7 @@ python test_rehab_modes.py
 - **Port 5000 already in use (macOS):** turn off AirPlay Receiver in System Settings.
 
 ## Team
-- Step 1 & 3 — ...
-- Step 2 (exercise logic, dual-task, breathing) — ...
+- Aly
+- Ana
+- Jimin
+- Jeongha
