@@ -1,122 +1,182 @@
-ability+
+# ability+
 
-Home rehabilitation with a laptop webcam, supervised remotely by a physiotherapist. Camera-guided upper-limb exercises, cognitive training, dual-task training and guided breathing breaks, plus a physiotherapist dashboard.
+**Home rehabilitation with a laptop webcam, supervised remotely by a physiotherapist.**
 
-Built by team GEMGEM for the IMChange Tech for Good challenge at LauzHack.
+Camera-guided arm and hand exercises, thinking games, dual-task training and guided breathing breaks for patients, plus a dashboard for their physiotherapist.
 
-Note: this is a training aid based on webcam estimates. It is not a medical device, and its angles are not clinical measurements.
+Built by team **GEMGEM** for the **IMChange Tech for Good** challenge at **LauzHack 2026**.
 
-Why
+> [!NOTE]
+> ability+ is a training aid based on webcam estimates. It is **not a medical device**, and its angles are **not clinical measurements**.
 
-In many developing countries, people who need rehabilitation can't reach a clinic, and the few NGO physiotherapists there have far more patients than they can see in person. Patients are sent home with a sheet of exercises and nobody checks whether they do them, or do them safely.
+---
 
-ability+ turns any laptop webcam into a home rehab assistant. Patients train at home, and their physiotherapist follows every session remotely, so one therapist can safely support many more people. Anyone else who wants to keep body and mind active can use it too.
+## Contents
+- [Why](#why)
+- [Demo](#demo)
+- [What it does](#what-it-does)
+- [Safety and privacy](#safety-and-privacy)
+- [Run it locally](#run-it-locally)
+- [Tests](#tests)
+- [Tech](#tech)
+- [Project structure](#project-structure)
+- [Troubleshooting](#troubleshooting)
+- [Limitations](#limitations)
+- [Team](#team)
 
-Demo
+---
 
-Not yet available.
+## Why
 
-What it does
+In many developing countries, people who need rehabilitation can't reach a clinic, and the few NGO physiotherapists there have far more patients than they can see in person. Patients are sent home with a sheet of exercises, and nobody checks whether they do them, or do them safely.
 
-For patients, three training modes
+ability+ turns any laptop webcam into a home rehab assistant:
 
-Mode	What happens
-Movement	Arm curls and finger opposition. Pose tracking counts each repetition, gives live voice and on-screen feedback, and warns before the patient goes past their safe limit.
-Thinking	Odd-one-out puzzles and memory sequences, answered hands-free by tilting the head, or with the mouse.
-Both at once (dual-task)	Hold a position while answering questions. Compares control with and without thinking, which matters for everyday tasks.
+- **Patients** train at home with live guidance.
+- **Physiotherapists** follow every session remotely, so one therapist can safely support many more people.
+- **Anyone** who wants to keep body and mind active can use it too.
 
-There are also a pain stop button, an automatic breathing break when movement quality drops, and a history of all sessions.
+## Demo
 
-For physiotherapists
+Video: *coming soon*
 
-A list of patients, with sessions that need review (pain or unsafe movement) at the top
-A per-session report: repetitions, angles, accuracy, breaks and dual-task results
-Prescriptions: start angle, target, safe limit, repetitions and side, used from the patient's next session
-Notes on sessions and messages in both directions
-Each patient's full data as a JSON download
-Safety and privacy
-The app never diagnoses or prescribes. It only checks movement against limits a physiotherapist sets, and it rejects unsafe prescriptions.
-When the body is not clearly visible, feedback pauses instead of guessing.
-Video is processed on the user's computer and never uploaded. Only numbers (angles, repetitions, events) are saved.
-Run it locally
+## What it does
 
-Requires Python 3.10+ and a webcam.
+### For patients: three training modes
 
-bash
+| Mode | What happens |
+|---|---|
+| **Movement** | Arm curls and sequential finger opposition. Pose tracking counts each repetition, gives live voice and on-screen feedback, and warns before the patient goes past their safe limit. A short animated guide ("Show me how") shows each exercise. |
+| **Thinking** | Odd-one-out puzzles and memory sequences, answered hands-free by tilting the head, or by clicking. |
+| **Both at once** (dual-task) | Hold a position (arm at the target angle, or an open hand) first on its own, then while answering simple questions with head tilts or clicks. The app compares how steady the hold was with and without thinking, which matters for everyday tasks. |
+
+Also included:
+
+- **Stop button** that ends an exercise at once and starts a calming breathing break.
+- **Breathing break**: 60 seconds of paced breathing (4 s in, 6 s out) with a shoulder-tension reminder. It opens after the Stop button, on request, or **automatically when movement quality drops** (smaller range, much slower repetitions, or repeated misses). The exercise is paused meanwhile.
+- **Voice feedback**, on by default. It can be turned off in Settings.
+- **My progress**: a history of all sessions.
+- **Messages** with the physiotherapist and their notes on each session.
+
+### For physiotherapists
+
+- A **patient list**, with sessions that need review at the top: those ended with the Stop button or that went past the safe limit.
+- A **report for each session**: repetitions, angles, accuracy, breathing breaks and dual-task results.
+- **Prescriptions**: start angle, target, safe limit, repetitions and side. They apply from the patient's next session.
+- **Notes** on sessions and **messages** in both directions.
+- Each patient's full data as a **JSON download**.
+
+## Safety and privacy
+
+- The app never diagnoses or prescribes. It only checks movement against limits the physiotherapist sets, and it **rejects unsafe prescriptions**.
+- When the body is not clearly visible, feedback **pauses instead of guessing**.
+- Video is processed **on the user's own computer** and never uploaded. Only numbers (angles, repetitions, events) are saved.
+
+## Run it locally
+
+**Requirements:** Python 3.10+, a webcam, and an internet connection the first time the thinking games load.
+
+```bash
 git clone https://github.com/younjimin/lauzhack.git
 cd lauzhack
 python -m venv .venv
 source .venv/bin/activate          # Windows: .venv\Scripts\activate
 pip install flask opencv-python mediapipe
 python main.py
+```
 
-Open http://127.0.0.1:5000 in your browser.
+Then open **http://127.0.0.1:5000** in your browser.
 
-The pose and hand models live in models/. If they are missing, download them into that folder: pose_landmarker_full.task, hand_landmarker.task.
+The pose and hand models are in `models/`. If they are missing, download `pose_landmarker_full.task` and `hand_landmarker.task` into that folder.
 
-Demo accounts
+### Demo accounts
 
-The database and both accounts are created on first start. The two accounts are already linked.
+The database and both accounts are created on first start, and the two accounts are already linked.
 
-Role	Email	Password
-Patient	patient@abilityplus.demo	demo1234
-Physiotherapist	doctor@abilityplus.demo	demo1234
+| Role | Email | Password |
+|---|---|---|
+| Patient | `patient@abilityplus.demo` | `demo1234` |
+| Physiotherapist | `doctor@abilityplus.demo` | `demo1234` |
 
-To show both sides at once, open the patient in a normal window and the physiotherapist in a private window.
+> [!TIP]
+> To show both sides at once, open the patient in a normal browser window and the physiotherapist in a private window.
 
-Without a webcam
+### Without a webcam
 
-Run with a recorded video instead:
+Play a recorded video instead:
 
-bash
+```bash
 REHAB_VIDEO=path/to/video.mp4 python main.py               # macOS / Linux
 $env:REHAB_VIDEO="path\to\video.mp4"; python main.py       # Windows PowerShell
+```
 
-Other options: GEM_DB=path.db uses a different database file, and GEM_DEMO=0 skips the demo accounts.
+### Other options
 
-Tests
-bash
-python test_step2_exercises.py
-python test_hand_side.py
-python test_rehab_modes.py
+| Variable | Effect |
+|---|---|
+| `GEM_DB=path.db` | Use a different database file (default `instance/abilityplus.db`) |
+| `GEM_DEMO=0` | Do not create the demo accounts |
 
-The tests use simulated pose data, so they need no webcam. They cover repetition counting, safety limits, left/right detection, dual-task scoring, fatigue detection and the full API (login, prescriptions, sessions, review notes, messages, permissions).
+## Tests
 
-Tech
-Backend: Python, Flask, MediaPipe (pose and hand landmarks), OpenCV
-Storage: SQLite with plain SQL, so it can move to PostgreSQL later
-Frontend: HTML, CSS and JavaScript with no build step. The thinking games use MediaPipe Face Mesh in the browser.
-Auth: hashed passwords (Werkzeug) and session cookies, with separate patient and physiotherapist roles
-Project structure
-main.py              Flask app: camera thread, exercise sessions, dual-task, thinking-game results
+```bash
+python test_step2_exercises.py     # exercises, safety limits and the full API
+python test_hand_side.py           # left/right hand detection
+python test_rehab_modes.py         # dual-task, fatigue detection, breathing-break API
+```
+
+The tests use simulated pose data, so they need no webcam. They cover repetition counting, safety limits, left/right detection, dual-task scoring, fatigue detection and the full API (login, prescriptions, sessions, review notes, messages, permissions). Run them inside the virtual environment so Flask is found.
+
+## Tech
+
+| Part | Used |
+|---|---|
+| Backend | Python, Flask, OpenCV, MediaPipe pose and hand landmarks |
+| Storage | SQLite with plain SQL, so it can move to PostgreSQL later |
+| Frontend | HTML, CSS and JavaScript with no build step. The thinking games use the MediaPipe Face Landmarker in the browser. |
+| Auth | Hashed passwords (Werkzeug) and session cookies, with separate patient and physiotherapist roles |
+
+## Project structure
+
+```
+main.py              Flask app: camera thread, exercise sessions, dual-task, breathing-break pause, thinking-game results
 auth_db.py           Login, SQLite database, physiotherapist and patient APIs, messages
 analyzer.py          Exercise logic: angles, smoothing, repetition counting, safe-range checks
-rehab_modes.py       Dual-task sessions, fatigue detection, head-tilt answers, shoulder tension
+rehab_modes.py       Dual-task sessions, head-tilt answers, fatigue detection, shoulder tension
 pose_detector.py     MediaPipe pose and hand detection
 main_with_step2.py   Debug runner in an OpenCV window, for tuning thresholds on test videos
+models/              MediaPipe pose and hand models
 frontend/
   login.html         Sign in and registration
-  gem.html           Patient app: overview, movement exercises, progress, settings
+  gem.html           Patient app: Movement home, exercise screen, progress, settings
   cognitive.js       Training-type chooser and thinking games
   rehab-modes.js     Dual-task training and breathing break
   account-bar.js     Patient account panel: prescription, physiotherapist notes, messages
   doctor.html        Physiotherapist dashboard
+docs/                Exercise logic notes (step2_README.md)
 test_*.py            Tests
-Troubleshooting
-The camera does not open (macOS): allow camera access for Terminal or VS Code in System Settings → Privacy & Security → Camera.
-The camera does not open (Windows): close other apps that use the webcam (Zoom, Teams, another browser tab).
-Port 5000 is already in use (macOS): turn off AirPlay Receiver in System Settings.
-The demo accounts don't work: an old database may still exist. Delete instance/ and restart.
-Limitations
+```
+
+## Troubleshooting
+
+| Problem | Fix |
+|---|---|
+| The camera does not open (macOS) | Allow camera access for Terminal or VS Code in System Settings → Privacy & Security → Camera. |
+| The camera does not open (Windows) | Close other apps that use the webcam (Zoom, Teams, another browser tab). |
+| The thinking games' camera does not start | They need internet access to load the face model the first time. You can also answer with mouse clicks. |
+| Port 5000 is already in use (macOS) | Turn off AirPlay Receiver in System Settings. |
+| The demo accounts don't work | An old database may still exist. Delete `instance/` and restart. |
+| Tests are skipped or Flask is not found | Activate the virtual environment first (`source .venv/bin/activate`). |
+
+## Limitations
 
 This is a hackathon prototype:
 
-Angles are 2D estimates from one camera.
-There is one camera per server, so the patient and the server run on the same computer.
-There is no verification of physiotherapist accounts, no password reset and no HTTPS. A real deployment would also need consent flows and medical-device review.
-Fatigue and dual-task thresholds are demo heuristics, not clinical cut-offs.
-Team
-Aly
-Ana
-Jimin
-Jeongha
+- Angles are 2D estimates from a single camera.
+- There is one camera per server, so the patient and the server run on the same computer.
+- There is no verification of physiotherapist accounts, no password reset and no HTTPS. A real deployment would also need consent flows and medical-device review.
+- Fatigue and dual-task thresholds are demo heuristics, not clinical cut-offs.
+
+## Team
+
+**Ability +**: Aly · Ana · Jimin · Jeongha
