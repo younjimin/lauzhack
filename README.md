@@ -179,4 +179,4 @@ This is a hackathon prototype:
 
 ## Team
 
-**Ability +**: Aly · Ana · Jimin · Jeongha
+**GemGem**: Aly · Ana · Jimin · Jeongha
